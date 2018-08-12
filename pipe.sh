@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # CMD:
-#    bsub -n 1 -q control -o LSF.CTRL/ -J CTRL.ATAC ./pipe.sh
+#    bsub -n 1 -q control -o LSF.CTRL/ -J CTRL.ChIP ./pipe.sh
 #
 
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
@@ -33,14 +33,18 @@ BAMS=$*
 echo SDIR=$SDIR
 echo BAMS=$BAMS
 
-RUNTIME="-We 59"
+RUNTIME="-We 119"
 echo $BAMS \
-    | xargs -n 1 bsub $RUNTIME -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" $SDIR/postMapBamProcessing_ATACSeq.sh
+    | xargs -n 1 bsub $RUNTIME -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
+        $SDIR/postMapBamProcessing_ChIPSeq.sh
 
 bSync ${TAG}_POST2_$$
 
 ls *.bed.gz \
-    | xargs -n 1 bsub $RUNTIME -o LSF.BW/ -J ${TAG}_BW2_$$ -R "rusage[mem=24]" $SDIR/makeBigWigFromBEDZ.sh
+    | xargs -n 1 bsub $RUNTIME -o LSF.BW/ -J ${TAG}_BW2_$$ -R "rusage[mem=24]" \
+        $SDIR/makeBigWigFromBEDZ.sh
+
+exit
 
 ls *.bed.gz \
     | xargs -n 1 bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_CALLP2_$$ -n 3 -R "rusage[mem=24]" \

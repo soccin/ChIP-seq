@@ -1,6 +1,6 @@
-# ATAC-Seq pipeline
+# ChIP-Seq pipeline
 
-## Version 4 (2018-03-01)
+## Version 1 (2018-08-12): Fork from ATAC-seq V4
 
 Single end version which uses both reads from PE-runs. Using methods from R.K. for bigWig generation.
 
@@ -12,7 +12,6 @@ Single end version which uses both reads from PE-runs. Using methods from R.K. f
 - BigWig file generation.
 
 	- convert bam to bed
-	- extend reads to library size in the 3’ direction for ChIP, no read extension for ATAC
 	- compute density for bigwig formation
 		- normalizing to 10 million mapped reads
 
