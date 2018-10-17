@@ -2,7 +2,7 @@
 
 ## Version 1 (2018-08-12): Fork from ATAC-seq V4
 
-Single end version which uses both reads from PE-runs. Using methods from R.K. for bigWig generation.
+Version which uses both reads from PE-runs. Using methods from R.K. for bigWig generation.
 
 - Post-alignment filtering:
 
