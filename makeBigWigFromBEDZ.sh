@@ -14,7 +14,8 @@ else
     OUT=$(basename $BEDZ | sed 's/.bed.gz/.10mNorm.bw/')
 fi
 
-GENOME=$SDIR/mouse_mm10.genome
+GENOME=$SDIR/human.b37.genome
+
 
 # TDIR=/scratch/socci
 # mkdir -p $TDIR
