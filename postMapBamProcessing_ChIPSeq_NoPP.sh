@@ -35,7 +35,8 @@ MAPQ=30
 
 # REMOVE this we do not want to force proper pairs for this one f 2 ==> proper pair
 # F 1804 ==> unmapped, mate unmapped, not primary, fails QC, duplicate
-samtools view -q MAPQ -F 1804 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/step1.bam
+## F 3852 (1804+2048) 2048==Supplementary Alignment
+samtools view -q $MAPQ -F 1804 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/step1.bam
 
 # From ENCODE
 # Remove orphan reads (pair was removed)
@@ -46,10 +47,10 @@ samtools view -q MAPQ -F 1804 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/step1.ba
 # fixmate requires name-sorted alignment; -r removes secondary and
 # unmapped (redundant here because already done above?)
 
-samtools sort -T $TDIR/tmpSrt.n -m 16G -n $TDIR/step1.bam \
-    | samtools fixmate -r - \
-    | samtools view -F 1804 - >$TDIR/step2.bam
-picardV2 SortSam I=$TDIR/step2.bam O=$OBAM SO=coordinate MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true
+picardV2 SortSam I=$TDIR/step1.bam O=$TDIR/step2.bam SO=queryname MAX_RECORDS_IN_RAM=5000000
+samtools fixmate -r $TDIR/step2.bam - \
+    | samtools view -F 1804 -u >$TDIR/step3.bam
+picardV2 SortSam I=$TDIR/step3.bam O=$OBAM SO=coordinate MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true
 
 #
 # Create BED version but keep filter BAM also
