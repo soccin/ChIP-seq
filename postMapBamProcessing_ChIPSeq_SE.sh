@@ -34,21 +34,9 @@ MAPQ=30
 
 # f 2 ==> proper pair
 # F 1804 ==> unmapped, mate unmapped, not primary, fails QC, duplicate
-samtools view -q MAPQ -f 2 -F 1804 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/step1.bam
+samtools view -q MAPQ -F 1804 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/step1.bam
 
-# From ENCODE
-# Remove orphan reads (pair was removed)
-# and read pairs mapping to different chromosomes
-# Obtain position sorted BAM
-#
-# fill in mate coordinates, ISIZE and mate-related flags
-# fixmate requires name-sorted alignment; -r removes secondary and
-# unmapped (redundant here because already done above?)
-
-samtools sort -n $TDIR/step1.bam
-    | samtools fixmate -r - \
-    | samtools view -F 1804 -f 2 - >$TDIR/step2.bam
-picardV2 SortSam I=$TDIR/step2.bam O=$OBAM SO=coordinate MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true
+picardV2 SortSam I=$TDIR/step1.bam O=$OBAM SO=coordinate MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true
 
 #
 # Create BED version but keep filter BAM also
