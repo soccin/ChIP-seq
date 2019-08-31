@@ -2,8 +2,9 @@
 
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
-OBAM=$1
+ODIR=$1
 IBAM=$2
+OBAM=$ODIR/$(basename ${IBAM/.bam/_postProcess.bam})
 
 #TDIR=/scratch/socci/_scratch_ChIPSeq/$(uuidgen -t)
 TDIR=_scratch_ChIPSeq/$(uuidgen -t)
