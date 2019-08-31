@@ -18,7 +18,7 @@ COMMAND_LINE=$*
 
 function usage {
     echo
-    echo "usage: $PIPENAME/pipe.sh [--proper-pair-off] BAM1 [BAM2 ... BAMN]"
+    echo "usage: $PIPENAME/pipe.sh [--proper-pair-off] [-s|--single-end-on] BAM1 [BAM2 ... BAMN]"
     echo "version=$SCRIPT_VERSION"
     echo ""
     echo
@@ -38,6 +38,7 @@ while :; do
         ;;
 
         -s|--single-end-on) SE="Yes"
+        ;;
 
         -*)
         echo
@@ -54,11 +55,10 @@ while :; do
 done
 
 echo PROPER_PAIR=$PROPER_PAIR
+echo SE=$SE
 BAMS=$*
 echo SDIR=$SDIR
 echo BAMS=$BAMS
-
-exit
 
 ODIR=out
 mkdir -p $ODIR
@@ -86,9 +86,9 @@ else
 
 fi
 
-exit
-
 bSync ${TAG}_POST2_$$
+
+exit
 
 ls *.bed.gz \
     | xargs -n 1 bsub $RUNTIME -o LSF.BW/ -J ${TAG}_BW2_$$ -R "rusage[mem=24]" \
