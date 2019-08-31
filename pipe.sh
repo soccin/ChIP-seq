@@ -18,7 +18,7 @@ COMMAND_LINE=$*
 
 function usage {
     echo
-    echo "usage: $PIPENAME/pipe.sh [--proper-pair-off] [-s|--single-end-on] BAM1 [BAM2 ... BAMN]"
+    echo "usage: $PIPENAME/pipe.sh [-o|--outdir <DIR>] [--proper-pair-off] [-s|--single-end-on] BAM1 [BAM2 ... BAMN]"
     echo "version=$SCRIPT_VERSION"
     echo ""
     echo
@@ -31,6 +31,7 @@ fi
 
 PROPER_PAIR="Yes"
 SE="No"
+ODIR=out
 
 while :; do
     case $1 in
@@ -38,6 +39,11 @@ while :; do
         ;;
 
         -s|--single-end-on) SE="Yes"
+        ;;
+
+        -o|--outdir)
+            ODIR=$2
+            shift
         ;;
 
         -*)
@@ -60,7 +66,6 @@ BAMS=$*
 echo SDIR=$SDIR
 echo BAMS=$BAMS
 
-ODIR=out
 mkdir -p $ODIR
 
 RUNTIME="-We 119"
