@@ -6,10 +6,13 @@ ODIR=$1
 IBAM=$2
 OBAM=$ODIR/$(basename ${IBAM/.bam/_postProcess.bam})
 
-TDIR=/scratch/socci/_scratch_ChIPSeq/$(uuidgen -t)
-#TDIR=_scratch_ChIPSeq/$(uuidgen -t)
+#TDIR=/scratch/socci/_scratch_ChIPSeq/$(uuidgen -t)
+TDIR=_scratch_ChIPSeq/$(uuidgen -t)
 mkdir -p $TDIR
-echo $TDIR
+echo TDIR=$TDIR
+
+echo ODIR=$ODIR
+echo OBAM=$OBAM
 
 
 #
@@ -35,7 +38,7 @@ MAPQ=30
 
 # f 2 ==> proper pair
 # F 1804 ==> unmapped, mate unmapped, not primary, fails QC, duplicate
-samtools view -q MAPQ -F 1804 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/step1.bam
+samtools view -q $MAPQ -F 1804 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/step1.bam
 
 picardV2 SortSam I=$TDIR/step1.bam O=$OBAM SO=coordinate MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true
 
@@ -47,4 +50,4 @@ samtools view -b $OBAM \
     | bedtools bamtobed -i - \
     | gzip -nc >${OBAM/.bam/.clean.bed.gz}
 
-rm -rf $TDIR
+#rm -rf $TDIR
