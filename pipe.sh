@@ -7,7 +7,7 @@
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
 SCRIPT_VERSION=$(git --git-dir=$SDIR/.git --work-tree=$SDIR describe --always --long)
-PIPENAME="ATAC-Seq"
+PIPENAME="ChIP-Seq"
 
 ##
 # Process command args
@@ -18,7 +18,7 @@ COMMAND_LINE=$*
 
 function usage {
     echo
-    echo "usage: $PIPENAME/pipe.sh BAM1 [BAM2 ... BAMN]"
+    echo "usage: $PIPENAME/pipe.sh [--proper-pair-off] BAM1 [BAM2 ... BAMN]"
     echo "version=$SCRIPT_VERSION"
     echo ""
     echo
@@ -29,14 +29,43 @@ if [ "$#" -lt "1" ]; then
     usage
 fi
 
+PROPER_PAIR="Yes"
+
+while :; do
+    case $1 in
+        --proper-pair-off) PROPER_PAIR="No"
+        ;;
+
+        -*)
+        echo
+        echo "Invalid option ["$1"]"
+        usage
+        exit
+        ;;
+
+        *) break
+        ;;
+
+    esac
+    shift
+done
+
+echo PROPER_PAIR=$PROPER_PAIR
 BAMS=$*
 echo SDIR=$SDIR
 echo BAMS=$BAMS
 
+exit
+
+ODIR=out
+mkdir -p $ODIR
+
 RUNTIME="-We 119"
 echo $BAMS \
     | xargs -n 1 bsub $RUNTIME -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
-        $SDIR/postMapBamProcessing_ChIPSeq.sh
+        echo $SDIR/postMapBamProcessing_ChIPSeq.sh $ODIR $PROPER_PAIR
+
+exit
 
 bSync ${TAG}_POST2_$$
 
