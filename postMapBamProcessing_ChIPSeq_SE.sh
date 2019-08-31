@@ -38,7 +38,8 @@ MAPQ=30
 
 # f 2 ==> proper pair
 # F 1804 ==> unmapped, mate unmapped, not primary, fails QC, duplicate
-samtools view -q $MAPQ -F 1804 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/step1.bam
+## F 3852 (1804+2048) 2048==Supplementary Alignment
+samtools view -q $MAPQ -F 3852 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/step1.bam
 
 picardV2 SortSam I=$TDIR/step1.bam O=$OBAM SO=coordinate MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true
 
