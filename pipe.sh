@@ -95,9 +95,9 @@ else
 
 fi
 
-bSync ${TAG}_POST2_$$
-
 exit
+
+bSync ${TAG}_POST2_$$
 
 ls *.bed.gz \
     | xargs -n 1 bsub $RUNTIME -o LSF.BW/ -J ${TAG}_BW2_$$ -R "rusage[mem=24]" \
