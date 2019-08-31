@@ -36,7 +36,7 @@ MAPQ=30
 # REMOVE this we do not want to force proper pairs for this one f 2 ==> proper pair
 # F 1804 ==> unmapped, mate unmapped, not primary, fails QC, duplicate
 ## F 3852 (1804+2048) 2048==Supplementary Alignment
-samtools view -q $MAPQ -F 1804 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/step1.bam
+samtools view -q $MAPQ -F 3852 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/step1.bam
 
 # From ENCODE
 # Remove orphan reads (pair was removed)
