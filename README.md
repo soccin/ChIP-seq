@@ -13,6 +13,7 @@ Try to match ENCODE 3 (https://github.com/soccin/ChIP-seq) as closely as possibl
         - MAPQ<30
         - Proper Pair (can be turned off)
         - exclude: unmapped, mate unmapped, secondary align, failing QC, Duplicate
+    - Also keep only the main chromosomes `[1-(19|22),X,Y]`; exclude MT, and the rest of the build, decoys, viral, ...
 
 - BigWig file generation.
 
