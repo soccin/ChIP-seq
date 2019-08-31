@@ -63,23 +63,27 @@ echo BAMS=$BAMS
 ODIR=out
 mkdir -p $ODIR
 
+RUNTIME="-We 119"
+
 if [ $SE = "No" ]; then
 
     if [ $PROPER_PAIR = "Yes" ]; then
 
-        RUNTIME="-We 119"
         echo $BAMS \
             | xargs -n 1 bsub $RUNTIME -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
                 $SDIR/postMapBamProcessing_ChIPSeq.sh $ODIR
 
     else
-        echo "Non Proper Paired is not implemented Yet"
-        exit -1
+
+        echo $BAMS \
+            | xargs -n 1 bsub $RUNTIME -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
+                $SDIR/postMapBamProcessing_ChIPSeq_NoPP.sh $ODIR
+
+
     fi
 
 else
 
-    RUNTIME="-We 119"
     echo $BAMS \
         | xargs -n 1 bsub $RUNTIME -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
             $SDIR/postMapBamProcessing_ChIPSeq_SE.sh $ODIR
