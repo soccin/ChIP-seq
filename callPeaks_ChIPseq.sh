@@ -89,7 +89,7 @@ $MACS callpeak \
     --nomodel \
     --shift 0 \
     --extsize $FRAGSIZE \
-    $CALL_BROAD_PEAKS
+    $CALL_BROAD_PEAKS \
     --outdir $ODIR
 
 MACS_ERROR=$?
