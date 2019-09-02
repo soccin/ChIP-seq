@@ -18,7 +18,7 @@ COMMAND_LINE=$*
 
 function usage {
     echo
-    echo "usage: $PIPENAME/pipe.sh [-o|--outdir <DIR>] [--proper-pair-off] [-s|--single-end-on] BAM1 [BAM2 ... BAMN]"
+    echo "usage: $PIPENAME/pipe.sh [-o|--outdir <DIR>] [--proper-pair-off] [-s|--single-end-on] --pairing-file <PAIRS> BAM1 [BAM2 ... BAMN]"
     echo "version=$SCRIPT_VERSION"
     echo ""
     echo
@@ -32,6 +32,7 @@ fi
 PROPER_PAIR="Yes"
 SE="No"
 ODIR=out
+PAIRS=""
 
 while :; do
     case $1 in
@@ -43,6 +44,11 @@ while :; do
 
         -o|--outdir)
             ODIR=$2
+            shift
+        ;;
+
+        --pairing-file)
+            PAIRS=$2
             shift
         ;;
 
@@ -103,11 +109,23 @@ ls $ODIR/*.bed.gz \
     | xargs -n 1 bsub $RUNTIME -o LSF.BW/ -J ${TAG}_BW2_$$ -R "rusage[mem=24]" \
         $SDIR/makeBigWigFromBEDZ.sh $GENOME
 
-exit
+medianFragmentLength=$(Rscript --no-save $SDIR/getMedianFragmentLengthFromPredictDFile.R $ODIR/profiles/*.log)
 
-ls *.bed.gz \
-    | xargs -n 1 bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_CALLP2_$$ -n 3 -R "rusage[mem=24]" \
-        $SDIR/callPeaks_ATACSeq.sh
+echo "medianFragmentLength =" $medianFragmentLength
+
+if [ "$PAIRS" == "" ]; then
+    echo
+    echo "Unpaired peak calling not yet implemented"
+    echo
+    exit
+fi
+
+Rscript --no-save $SDIR/generateMACSArgs.R $PAIRS $ODIR/*.bed.gz \
+    | tr '\n' '\000' \
+    | xargs -n 1 -0 bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_CALLP2_$$ -n 3 -R "rusage[mem=24]" \
+        $SDIR/callPeaks_ChIP.seq $GENOME $medianFragmentLength
+
+exit
 
 bSync ${TAG}_CALLP2_$$
 
