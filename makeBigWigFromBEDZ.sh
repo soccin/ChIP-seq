@@ -18,7 +18,7 @@ else
     OUTFILE=$(basename $BEDZ | sed 's/.bed.gz/.10mNorm.bw/')
 fi
 
-OUTPREDICT=$(basename $BEDZ | sed 's/.bed.gz/.log/')
+OUTPREDICT=$(basename $BEDZ | sed 's/.bed.gz//')
 
 echo
 
@@ -58,4 +58,5 @@ case $GBUILD in
     ;;
 esac
 
-$MACS predictd -g $MACS_GENOME -i $BEDZ 2> $ODIR/$OUTPREDICT
+mkdir -p $ODIR/$OUTPREDICT
+$MACS predictd -g $MACS_GENOME -i $BEDZ --outdir $ODIR/$OUTPREDICT 2> $ODIR/${OUTPREDICT}.log
