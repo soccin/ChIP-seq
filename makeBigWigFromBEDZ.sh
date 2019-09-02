@@ -1,6 +1,8 @@
 #!/bin/bash
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
+export PYTHONPATH=/opt/common/CentOS_6/MACS2/MACS2-2.1.1/lib/python2.7/site-packages/:$PYTHONPATH
+MACS=/opt/common/CentOS_6/MACS2/MACS2-2.1.1/bin/macs2
 
 GBUILD=$1
 BEDZ=$2
@@ -15,6 +17,8 @@ else
     echo "$BEDZ 10mNorm scaleFactor "$scaleFactor
     OUTFILE=$(basename $BEDZ | sed 's/.bed.gz/.10mNorm.bw/')
 fi
+
+OUTPREDICT=$(basename $BEDZ | sed 's/.bed.gz/.log/')
 
 echo
 
@@ -39,3 +43,19 @@ zcat $BEDZ \
     | bedtools genomecov -i - -g $GENOME -bg -scale $scaleFactor \
     | $SDIR/bin/wigToBigWig stdin $GENOME $OUT
 
+case $GBUILD in
+    mm10)
+    MACS_GENOME=mm
+    ;;
+
+    b37)
+    MACS_GENOME=hs
+    ;;
+
+    *)
+    echo "Invalid Genome [$GBUILD]"
+    exit -1
+    ;;
+esac
+
+$MACS predictd -g $MACS_GENOME -i $BEDZ 2> $ODIR/$OUTPREDICT
