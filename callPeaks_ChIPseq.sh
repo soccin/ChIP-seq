@@ -5,6 +5,10 @@ MACS=/opt/common/CentOS_6/MACS2/MACS2-2.1.1/bin/macs2
 
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
+
+CALL_BROAD_PEAKS="--broad"
+
+
 GBUILD=$1
 FRAGSIZE=$2
 
@@ -30,11 +34,14 @@ if [ "$#" == "4" ]; then
     CBED=$4
     MACS_C_ARG="-c $CBED"
 else
-    CBED="_NoCTRL"
+    CBED="___NoCTRL"
     MACS_C_ARG=" "
 fi
 
-ODIR=$(dirname $TBED)/macs
+PREFIX=$(basename ${TBED/_postProcess.*/})_$(basename ${CBED/_postProcess.*/} | sed 's/.*_s_/___/')
+echo $PREFIX
+
+ODIR=$(dirname $TBED)/macs/$PREFIX
 mkdir -p $ODIR
 
 # TDIR=/scratch/socci/_scratch_ATACSeq/$(uuidgen -t)
@@ -45,6 +52,9 @@ mkdir -p $ODIR
 #
 # From:
 #   https://github.com/ENCODE-DCC/chip-seq-pipeline/blob/master/dnanexus/macs2/src/macs2.py
+#
+#
+# -B --SPMR ask MACS2 to generate pileup signal file of 'fragment pileup per million reads' in bedGraph format.
 #
 
     # # ===========================================
@@ -77,9 +87,9 @@ $MACS callpeak \
     -g $MACS_GENOME \
     -p $pval_thres \
     --nomodel \
-    --shift $0 \
+    --shift 0 \
     --extsize $FRAGSIZE \
-    --broad \
+    $CALL_BROAD_PEAKS
     --outdir $ODIR
 
 MACS_ERROR=$?
