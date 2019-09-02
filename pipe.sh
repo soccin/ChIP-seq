@@ -65,6 +65,8 @@ echo SE=$SE
 BAMS=$*
 echo SDIR=$SDIR
 echo BAMS=$BAMS
+GENOME=$($SDIR/getGenomeBuildBAM.sh $1)
+echo GENOME=$GENOME
 
 mkdir -p $ODIR
 
@@ -99,9 +101,9 @@ exit
 
 bSync ${TAG}_POST2_$$
 
-ls *.bed.gz \
+ls $ODIR/*.bed.gz \
     | xargs -n 1 bsub $RUNTIME -o LSF.BW/ -J ${TAG}_BW2_$$ -R "rusage[mem=24]" \
-        $SDIR/makeBigWigFromBEDZ.sh
+        $SDIR/makeBigBedFromBEDZ.sh $GENOME
 
 exit
 
