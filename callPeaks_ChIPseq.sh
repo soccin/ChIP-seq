@@ -6,6 +6,7 @@ MACS=/opt/common/CentOS_6/MACS2/MACS2-2.1.1/bin/macs2
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
 GBUILD=$1
+FRAGSIZE=$2
 
 case $GBUILD in
     mm10)
@@ -24,11 +25,13 @@ esac
 
 echo "MACS GENEOME =" $MACS_GENOME
 
-TBED=$2
-if [ "$#" == "3" ]; then
-    CBED=$3
+TBED=$3
+if [ "$#" == "4" ]; then
+    CBED=$4
+    MACS_C_ARG="-c $CBED"
 else
     CBED="_NoCTRL"
+    MACS_C_ARG=" "
 fi
 
 ODIR=$(dirname $TBED)/macs
@@ -64,26 +67,19 @@ mkdir -p $ODIR
     #           '-g %s -p 1e-2 --broad --nomodel --shift 0 --extsize %s --keep-dup all' % (genomesize, fraglen)
 
 
-smooth_window=150
-
-# ./modules/callpeak_macs2_atac.bds:    shiftsize := round( smooth_window.parseReal()/2.0 )
-
-shiftsize=$((smooth_window / 2))
-
-# From paper (Philip, et al, )
-
 pval_thres=0.01
 
 $MACS callpeak \
-    -t $TDIR/cleanBED.bed.gz \
+    -t $TBED \
+    $MACS_C_ARG \
     -f BED \
     -n $PREFIX \
-    -g $genome \
+    -g $MACS_GENOME \
     -p $pval_thres \
     --nomodel \
-    --shift $shiftsize \
-    --extsize $smooth_window \
-    --call-summits \
+    --shift $0 \
+    --extsize $FRAGSIZE \
+    --broad \
     --outdir $ODIR
 
 MACS_ERROR=$?
