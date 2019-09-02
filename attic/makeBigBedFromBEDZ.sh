@@ -34,7 +34,6 @@ GENOME=$SDIR/lib/genomes/${GBUILD}.genome
 
 zcat $BEDZ \
     | bedtools slop -i - -g $GENOME -s -l 0 -r 0 \
-    | egrep -v "chrUn|_random" \
     | bedtools genomecov -i - -g $GENOME -bg -scale $scaleFactor \
     | $SDIR/wigToBigWig stdin $GENOME $OUT
 

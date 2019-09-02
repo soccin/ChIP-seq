@@ -97,13 +97,11 @@ else
 
 fi
 
-exit
-
 bSync ${TAG}_POST2_$$
 
 ls $ODIR/*.bed.gz \
     | xargs -n 1 bsub $RUNTIME -o LSF.BW/ -J ${TAG}_BW2_$$ -R "rusage[mem=24]" \
-        $SDIR/makeBigBedFromBEDZ.sh $GENOME
+        $SDIR/makeBigWigFromBEDZ.sh $GENOME
 
 exit
 
