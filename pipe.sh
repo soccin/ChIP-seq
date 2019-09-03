@@ -123,7 +123,7 @@ fi
 Rscript --no-save $SDIR/generateMACSArgs.R $PAIRS $ODIR/*.bed.gz \
     | tr '\n' '\000' \
     | xargs -n 1 -0 bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_CALLP2_$$ -n 3 -R "rusage[mem=24]" \
-        $SDIR/callPeaks_ChIP.sh $GENOME $medianFragmentLength
+        $SDIR/callPeaks_ChIPseq.sh $GENOME $medianFragmentLength
 
 exit
 
