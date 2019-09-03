@@ -83,6 +83,7 @@ mkdir -p $ODIR
 
 RUNTIME="-We 119"
 
+#if [ "" ]; then
 if [ $SE = "No" ]; then
 
     if [ $PROPER_PAIR = "Yes" ]; then
@@ -115,6 +116,7 @@ ls $ODIR/*.bed.gz \
         $SDIR/makeBigWigFromBEDZ.sh $GENOME
 
 bSync ${TAG}_BW2_$$
+#fi
 
 medianFragmentLength=$(Rscript --no-save $SDIR/getMedianFragmentLengthFromPredictDFile.R $ODIR/profiles/*.log)
 
@@ -128,8 +130,7 @@ if [ "$PAIRS" == "" ]; then
 fi
 
 Rscript --no-save $SDIR/generateMACSArgs.R $PAIRS $ODIR/*.bed.gz \
-    | tr '\n' '\000' \
-    | xargs -n 1 -0 bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_CALLP2_$$ -n 3 -R "rusage[mem=24]" \
+    | xargs -n 2 bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_CALLP2_$$ -n 3 -R "rusage[mem=24]" \
         $SDIR/callPeaks_ChIPseq.sh $PEAK_TYPE $GENOME $medianFragmentLength
 
 exit
