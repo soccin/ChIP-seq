@@ -114,6 +114,8 @@ ls $ODIR/*.bed.gz \
     | xargs -n 1 bsub $RUNTIME -o LSF.BW/ -J ${TAG}_BW2_$$ -R "rusage[mem=24]" \
         $SDIR/makeBigWigFromBEDZ.sh $GENOME
 
+bSync ${TAG}_BW2_$$
+
 medianFragmentLength=$(Rscript --no-save $SDIR/getMedianFragmentLengthFromPredictDFile.R $ODIR/profiles/*.log)
 
 echo "medianFragmentLength =" $medianFragmentLength
