@@ -18,7 +18,7 @@ COMMAND_LINE=$*
 
 function usage {
     echo
-    echo "usage: $PIPENAME/pipe.sh [-o|--outdir <DIR>] [--proper-pair-off] [-s|--single-end-on] --pairing-file <PAIRS> BAM1 [BAM2 ... BAMN]"
+    echo "usage: $PIPENAME/pipe.sh [-n|--narrow-peaks] [-o|--outdir <DIR>] [--proper-pair-off] [-s|--single-end-on] --pairing-file <PAIRS> BAM1 [BAM2 ... BAMN]"
     echo "version=$SCRIPT_VERSION"
     echo ""
     echo
@@ -33,9 +33,14 @@ PROPER_PAIR="Yes"
 SE="No"
 ODIR=out
 PAIRS=""
+PEAK_TYPE=""
 
 while :; do
     case $1 in
+
+        -n|--narrow-peaks) PEAK_TYPE="-n"
+        ;;
+
         --proper-pair-off) PROPER_PAIR="No"
         ;;
 
@@ -123,7 +128,7 @@ fi
 Rscript --no-save $SDIR/generateMACSArgs.R $PAIRS $ODIR/*.bed.gz \
     | tr '\n' '\000' \
     | xargs -n 1 -0 bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_CALLP2_$$ -n 3 -R "rusage[mem=24]" \
-        $SDIR/callPeaks_ChIPseq.sh $GENOME $medianFragmentLength
+        $SDIR/callPeaks_ChIPseq.sh $PEAK_TYPE $GENOME $medianFragmentLength
 
 exit
 

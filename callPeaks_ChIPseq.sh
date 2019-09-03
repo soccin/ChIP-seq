@@ -5,9 +5,28 @@ MACS=/opt/common/CentOS_6/MACS2/MACS2-2.1.1/bin/macs2
 
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
-
 CALL_BROAD_PEAKS="--broad"
+while :; do
+    case $1 in
+        -n|--narrow-peaks) CALL_BROAD_PEAKS=" "
+        echo
+        echo "Calling narrow peaks set"
+        echo
+        ;;
 
+        -*)
+        echo
+        echo "Invalid option ["$1"]"
+        usage
+        exit
+        ;;
+
+        *) break
+        ;;
+
+    esac
+    shift
+done
 
 GBUILD=$1
 FRAGSIZE=$2
