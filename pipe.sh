@@ -116,7 +116,6 @@ ls $ODIR/*.bed.gz \
         $SDIR/makeBigWigFromBEDZ.sh $GENOME
 
 bSync ${TAG}_BW2_$$
-#fi
 
 medianFragmentLength=$(Rscript --no-save $SDIR/getMedianFragmentLengthFromPredictDFile.R $ODIR/profiles/*.log)
 
@@ -137,15 +136,19 @@ exit
 
 bSync ${TAG}_CALLP2_$$
 
-bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_MergePeaks_$$ -n 3 -R "rusage[mem=24]" \
-    $SDIR/mergePeaksToSAF.sh callpeaks \>macsPeaksMerged.saf
+#fi # DEBUG
 
-PBAMS=$(ls *_postProcess.bam)
-bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_MergePeaks_$$)" \
-    $SDIR/featureCounts -O -Q 10 -p -T 10 \
-        -F SAF -a macsPeaksMerged.saf \
-        -o peaks_raw_fcCounts.txt \
-        $PBAMS
+if [ "$PEAK_TYPE" == "-n" ]; then
+    bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_MergePeaks_$$ -n 3 -R "rusage[mem=24]" \
+        $SDIR/mergePeaksToSAF.sh $ODIR/macs \>$ODIR/macs/macsPeaksMerged.saf
 
-bsub $RUNTIME -o LSF.DESEQ/ -J ${TAG}_DESEQ_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_Count_$$)" \
-    Rscript --no-save $SDIR/getDESeqScaleFactors.R
+    PBAMS=$(ls $ODIR/*_postProcess.bam)
+    bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_MergePeaks_$$)" \
+        $SDIR/featureCounts -O -Q 10 -p -T 10 \
+            -F SAF -a $ODIR/macs/macsPeaksMerged.saf \
+            -o $ODIR/macs/peaks_raw_fcCounts.txt \
+            $PBAMS
+
+    bsub $RUNTIME -o LSF.DESEQ/ -J ${TAG}_DESEQ_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_Count_$$)" \
+        Rscript --no-save $SDIR/getDESeqScaleFactors.R $ODIR/macs/peaks_raw_fcCounts.txt
+fi
