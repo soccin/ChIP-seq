@@ -7,5 +7,6 @@ med.FragLen=map(args,readLines) %>%
     map(function(x){if(len(x)>0) strsplit(x," ")[[1]][14]}) %>%
     unlist %>%
     as.numeric %>%
-    median
+    median %>%
+    floor
 cat(med.FragLen,"\n")
