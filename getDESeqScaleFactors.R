@@ -1,9 +1,10 @@
 suppressPackageStartupMessages(require(DESeq2))
-dd=read.delim("peaks_raw_fcCounts.txt",comment="#")
+args=commandArgs(trailing=T)
+dd=read.delim(args[1],comment="#")
 ds=as.matrix(dd[,7:ncol(dd)])
 rownames(ds)=dd$Geneid
 cond=factor(colnames(ds))
 dds=DESeqDataSetFromMatrix(ds,colData=data.frame(Sample=cond),design=~Sample)
 dds=estimateSizeFactors(dds)
 sfm=data.frame(scaleFactor=1/sizeFactors(dds))
-write.csv(sfm,"scaleFactorsDESeq2.csv")
+write.csv(sfm,file.path(dirname(args[1]),"scaleFactorsDESeq2.csv"))
