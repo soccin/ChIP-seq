@@ -13,6 +13,10 @@ for(ii in seq(nrow(pairs))) {
     target=grep(pairs$X2[ii],inputs,value=T)
     control=grep(pairs$X1[ii],inputs,value=T)
 
+    if(len(control)==0) {
+        control="_NoCTRL"
+    }
+
     if(len(target)>1 | len(control)>1) {
         cat("\n\tFATAL ERROR: degenerate target/control\n\n")
         cat(target)

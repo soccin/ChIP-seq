@@ -57,6 +57,15 @@ else
     MACS_C_ARG=" "
 fi
 
+#
+# Check if control sample is _NoCTRL and reset to Target only calling
+#
+
+if [ "$CBED" == "_NoCTRL" ]; then
+    CBED="___NoCTRL"
+    MACS_C_ARG=" "
+fi
+
 PREFIX=$(basename ${TBED/_postProcess.*/})_$(basename ${CBED/_postProcess.*/} | sed 's/.*_s_/___/')
 echo $PREFIX
 
