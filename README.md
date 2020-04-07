@@ -1,6 +1,9 @@
 # ChIP-Seq pipeline
 
 ## Version 1.5 (2019-08-30): Match ENCODE 3
+## BRANCH feature-luna: Version for LUNA LSF
+
+This is the last version to run on LUNA. Removed -We flags as that SLA was removed from LUNA
 
 Version which uses both reads from PE-runs. Using methods from R.K. for bigWig generation. Added option to allow the use of non-proper paired reads for cases where translocations important.
 
