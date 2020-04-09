@@ -5,6 +5,13 @@
 
 This is the last version to run on LUNA. Removed -We flags as that SLA was removed from LUNA
 
+- Example run command:
+```{bash}
+bsub -o LSF.CTRL/ ./ChIP-seq/pipe.sh \
+    --pairing-file results/Proj_10706_B_sample_pairing.txt \
+    results/alignments/Proj_10706_B_s_*bam
+```
+
 Version which uses both reads from PE-runs. Using methods from R.K. for bigWig generation. Added option to allow the use of non-proper paired reads for cases where translocations important.
 
 Try to match ENCODE 3 (https://github.com/soccin/ChIP-seq) as closely as possible
