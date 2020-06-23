@@ -81,7 +81,7 @@ echo GENOME=$GENOME
 
 mkdir -p $ODIR
 
-RUNTIME="-We 119"
+RUNTIME=" "
 
 #if [ "" ]; then
 if [ $SE = "No" ]; then
