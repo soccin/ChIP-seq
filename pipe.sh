@@ -84,6 +84,7 @@ echo GENOME=$GENOME
 mkdir -p $ODIR
 
 RUNTIME="-W 59"
+RUNTIMELONG="-W 359"
 
 #if [ "" ]; then
 if [ $SE = "No" ]; then
@@ -91,13 +92,13 @@ if [ $SE = "No" ]; then
     if [ $PROPER_PAIR = "Yes" ]; then
 
         echo $BAMS \
-            | xargs -n 1 bsub $RUNTIME -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
+            | xargs -n 1 bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
                 $SDIR/postMapBamProcessing_ChIPSeq.sh $ODIR
 
     else
 
         echo $BAMS \
-            | xargs -n 1 bsub $RUNTIME -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
+            | xargs -n 1 bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
                 $SDIR/postMapBamProcessing_ChIPSeq_NoPP.sh $ODIR
 
 
@@ -106,7 +107,7 @@ if [ $SE = "No" ]; then
 else
 
     echo $BAMS \
-        | xargs -n 1 bsub $RUNTIME -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
+        | xargs -n 1 bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
             $SDIR/postMapBamProcessing_ChIPSeq_SE.sh $ODIR
 
 fi
