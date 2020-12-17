@@ -1,9 +1,9 @@
 # ChIP-Seq pipeline
 
-## Version 1.5 (2019-08-30): Match ENCODE 3
-## BRANCH feature-luna: Version for LUNA LSF
+## Version 2.0 (2020-12-16): Match ENCODE 3
+## BRANCH master: JUNO LSF
 
-This is the last version to run on LUNA. Removed -We flags as that SLA was removed from LUNA
+This version modified to run on JUNO
 
 - Example run command:
 ```{bash}
