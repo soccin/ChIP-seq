@@ -9,6 +9,8 @@ SDIR="$( cd "$( dirname "$0" )" && pwd )"
 SCRIPT_VERSION=$(git --git-dir=$SDIR/.git --work-tree=$SDIR describe --always --long)
 PIPENAME="ChIP-Seq"
 
+module load bedtools
+
 ##
 # Process command args
 
@@ -81,7 +83,7 @@ echo GENOME=$GENOME
 
 mkdir -p $ODIR
 
-RUNTIME=" "
+RUNTIME="-W 59"
 
 #if [ "" ]; then
 if [ $SE = "No" ]; then
@@ -129,7 +131,7 @@ if [ "$PAIRS" == "" ]; then
 fi
 
 Rscript --no-save $SDIR/generateMACSArgs.R $PAIRS $ODIR/*.bed.gz \
-    | xargs -n 2 bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_CALLP2_$$ -n 3 -R "rusage[mem=24]" \
+    | xargs -n 2 bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_CALLP2_$$ -n 3 -R "rusage[mem=10]" \
         $SDIR/callPeaks_ChIPseq.sh $PEAK_TYPE $GENOME $medianFragmentLength
 
 exit
@@ -139,7 +141,7 @@ bSync ${TAG}_CALLP2_$$
 #fi # DEBUG
 
 if [ "$PEAK_TYPE" == "-n" ]; then
-    bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_MergePeaks_$$ -n 3 -R "rusage[mem=24]" \
+    bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_MergePeaks_$$ -n 3 -R "rusage[mem=10]" \
         $SDIR/mergePeaksToSAF.sh $ODIR/macs \>$ODIR/macs/macsPeaksMerged.saf
 
     PBAMS=$(ls $ODIR/*_postProcess.bam)
@@ -152,3 +154,6 @@ if [ "$PEAK_TYPE" == "-n" ]; then
     bsub $RUNTIME -o LSF.DESEQ/ -J ${TAG}_DESEQ_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_Count_$$)" \
         Rscript --no-save $SDIR/getDESeqScaleFactors.R $ODIR/macs/peaks_raw_fcCounts.txt
 fi
+
+module unload bedtools
+
