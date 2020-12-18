@@ -92,13 +92,13 @@ if [ $SE = "No" ]; then
     if [ $PROPER_PAIR = "Yes" ]; then
 
         echo $BAMS \
-            | xargs -n 1 bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
+            | xargs -n 1 bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_01_POST2_$$ -R "rusage[mem=24]" \
                 $SDIR/postMapBamProcessing_ChIPSeq.sh $ODIR
 
     else
 
         echo $BAMS \
-            | xargs -n 1 bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
+            | xargs -n 1 bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_01_POST2_$$ -R "rusage[mem=24]" \
                 $SDIR/postMapBamProcessing_ChIPSeq_NoPP.sh $ODIR
 
 
@@ -107,18 +107,18 @@ if [ $SE = "No" ]; then
 else
 
     echo $BAMS \
-        | xargs -n 1 bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_POST2_$$ -R "rusage[mem=24]" \
+        | xargs -n 1 bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_01_POST2_$$ -R "rusage[mem=24]" \
             $SDIR/postMapBamProcessing_ChIPSeq_SE.sh $ODIR
 
 fi
 
-bSync ${TAG}_POST2_$$
+bSync ${TAG}_01_POST2_$$
 
 ls $ODIR/*.bed.gz \
-    | xargs -n 1 bsub $RUNTIME -o LSF.BW/ -J ${TAG}_BW2_$$ -R "rusage[mem=24]" \
+    | xargs -n 1 bsub $RUNTIMELONG -o LSF.BW/ -J ${TAG}_02_BW2_$$ -R "rusage[mem=24]" \
         $SDIR/makeBigWigFromBEDZ.sh $GENOME
 
-bSync ${TAG}_BW2_$$
+bSync ${TAG}_02_BW2_$$
 
 medianFragmentLength=$(Rscript --no-save $SDIR/getMedianFragmentLengthFromPredictDFile.R $ODIR/profiles/*.log)
 
@@ -132,12 +132,12 @@ if [ "$PAIRS" == "" ]; then
 fi
 
 Rscript --no-save $SDIR/generateMACSArgs.R $PAIRS $ODIR/*.bed.gz \
-    | xargs -n 2 bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_CALLP2_$$ -n 3 -R "rusage[mem=10]" \
+    | xargs -n 2 bsub $RUNTIMELONG -o LSF.CALLP/ -J ${TAG}_03_CALLP2_$$ -n 3 -R "rusage[mem=10]" \
         $SDIR/callPeaks_ChIPseq.sh $PEAK_TYPE $GENOME $medianFragmentLength
 
 exit
 
-bSync ${TAG}_CALLP2_$$
+bSync ${TAG}_03_CALLP2_$$
 
 #fi # DEBUG
 
