@@ -9,8 +9,9 @@ OBAM=$ODIR/$(basename ${IBAM/.bam/_postProcess.bam})
 #TDIR=/scratch/socci/_scratch_ChIPSeq/$(uuidgen -t)
 TDIR=_scratch_ChIPSeq/$(uuidgen -t)
 mkdir -p $TDIR
-echo $TDIR
-
+echo "[12]" $TDIR
+echo IBAM=$IBAM >> $TDIR/postMapLog
+echo IBAM=$IBAM
 
 #
 # Generate a BED file with the chromosomes to keep
@@ -49,8 +50,8 @@ samtools view -q $MAPQ -f 2 -F 3852 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/st
 # unmapped (redundant here because already done above?)
 
 picardV2 SortSam I=$TDIR/step1.bam O=$TDIR/step2.bam SO=queryname MAX_RECORDS_IN_RAM=5000000
-samtools fixmate -r $TDIR/step2.bam - \
-    | samtools view -F 1804 -f 2 -u >$TDIR/step3.bam
+samtools fixmate -r $TDIR/step2.bam - >$TDIR/step2b.bam
+samtools view -F 1804 -f 2 -u $TDIR/step2b.bam >$TDIR/step3.bam
 picardV2 SortSam I=$TDIR/step3.bam O=$OBAM SO=coordinate MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true
 
 #
