@@ -12,6 +12,21 @@ bsub -o LSF.CTRL/ ./ChIP-seq/pipe.sh \
     results/alignments/Proj_10706_B_s_*bam
 ```
 
+The pairing file should be
+
+| Col-1  | Col-2  |
+|--------|--------|
+| CTRL_1 | TRGT_1 |
+| CTRL_2 | TRGT_2 |
+
+
+You need to use a pairing file. If the samples are TARGET only (no control) then use 'na' for control:
+
+| Col-1  | Col-2  |
+|--------|--------|
+|   na   | TRGT_1 |
+|   na   | TRGT_2 |
+
 Version which uses both reads from PE-runs. Using methods from R.K. for bigWig generation. Added option to allow the use of non-proper paired reads for cases where translocations important.
 
 Try to match ENCODE 3 (https://github.com/soccin/ChIP-seq) as closely as possible

@@ -127,6 +127,8 @@ echo "medianFragmentLength =" $medianFragmentLength
 if [ "$PAIRS" == "" ]; then
     echo
     echo "Unpaired peak calling not yet implemented"
+    echo "To run unpaired samples put 'na' in col 1"
+    echo "of pairing file"
     echo
     exit
 fi

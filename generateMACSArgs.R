@@ -11,9 +11,16 @@ pairs=read_tsv(pairingFile,col_names=F,col_type=cols())
 for(ii in seq(nrow(pairs))) {
 
     target=grep(pairs$X2[ii],inputs,value=T)
-    control=grep(pairs$X1[ii],inputs,value=T)
 
-    if(len(control)==0) {
+    if(!(pairs$X1[ii] %in% c("NA","na","_na","_NA"))) {
+
+        control=grep(pairs$X1[ii],inputs,value=T)
+
+        if(len(control)==0) {
+            control="_NoCTRL"
+        }
+
+    } else {
         control="_NoCTRL"
     }
 
