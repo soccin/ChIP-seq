@@ -1,11 +1,21 @@
 #/bin/bash
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
-HOMERBIN=/ifs/work/socci/tools/HOMER/bin
+HOMERBIN=/juno/work/bic/socci/tools/HOMER/bin
 export PATH=$HOMERBIN:$PATH
 mkdir -p annote
 
 macsNarrowPeakFile=$1
+
+if [ "$macsNarrowPeakFile" == "" ]; then
+    echo
+    echo "  usage: annotateWithHomer.sh MACS_PEAK_FILE"
+    echo
+    echo "     Can use either _peaks.broadPeak or _peaks.narrowPeak "
+    echo "     N.B.: Hardcoded to HG19"
+    echo
+    exit
+fi
 
 wdir=$(dirname $macsNarrowPeakFile)
 TMPFILE=$wdir/tmpPeaks.bed_$$
