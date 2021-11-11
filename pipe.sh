@@ -79,6 +79,15 @@ BAMS=$*
 echo SDIR=$SDIR
 echo BAMS=$BAMS
 GENOME=$($SDIR/getGenomeBuildBAM.sh $1)
+
+if [[ "$GENOME" =~ unknown ]]; then
+    echo
+    echo "  FATAL ERROR"
+    echo "  UNKNOWN GENOME" $GENOME
+    echo
+    exit -1
+fi
+
 echo GENOME=$GENOME
 
 mkdir -p $ODIR
