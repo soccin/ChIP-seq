@@ -61,6 +61,11 @@ case $GENOME_MD5 in
     echo "GRC_m38"
     ;;
 
+    863ad3aa4e086b3224adce2aa4f48b01)
+    # mouse_hybrid (MM10+B370)
+    echo "mm10+b37"
+    ;;
+
     *)
     echo "unknown" $GENOME_MD5
     ;;
