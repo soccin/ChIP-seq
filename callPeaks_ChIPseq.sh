@@ -32,7 +32,7 @@ GBUILD=$1
 FRAGSIZE=$2
 
 case $GBUILD in
-    mm10)
+    mm10*)
     MACS_GENOME=mm
     ;;
 
