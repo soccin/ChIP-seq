@@ -23,6 +23,11 @@ for those with non-focal/broad binding we use:
 
 See the MACS2 website [https://github.com/taoliu/MACS] for more information on the output.
 
+There is also an aggregate peak file there which combines the peaks from all samples
+- macs/macsPeaksMerged.saf
+and a file that counts the coverage for each sample within these combined peaks
+- macs/peaks_raw_fcCounts.txt
+
 _chipSeq/bw_:
 Normalized (to 10million reads) bigwig files for loading IP profiles into IGV [http://software.broadinstitute.org/software/igv/].
 

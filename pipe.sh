@@ -152,20 +152,28 @@ bSync ${TAG}_03_CALLP2_$$
 
 #fi # DEBUG
 
-if [ "$PEAK_TYPE" == "-n" ]; then
-    bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_MergePeaks_$$ -n 3 -R "rusage[mem=10]" \
-        $SDIR/mergePeaksToSAF.sh $ODIR/macs \>$ODIR/macs/macsPeaksMerged.saf
+bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_MergePeaks_$$ -n 3 -R "rusage[mem=10]" \
+    $SDIR/mergePeaksToSAF.sh $ODIR/macs \>$ODIR/macs/macsPeaksMerged.saf
 
-    PBAMS=$(ls $ODIR/*_postProcess.bam)
-    bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_MergePeaks_$$)" \
-        $SDIR/featureCounts -O -Q 10 -p -T 10 \
-            -F SAF -a $ODIR/macs/macsPeaksMerged.saf \
-            -o $ODIR/macs/peaks_raw_fcCounts.txt \
-            $PBAMS
+PBAMS=$(ls $ODIR/*_postProcess.bam)
+bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_MergePeaks_$$)" \
+    $SDIR/featureCounts -O -Q 10 -p -T 10 \
+        -F SAF -a $ODIR/macs/macsPeaksMerged.saf \
+        -o $ODIR/macs/peaks_raw_fcCounts.txt \
+        $PBAMS
 
-    bsub $RUNTIME -o LSF.DESEQ/ -J ${TAG}_DESEQ_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_Count_$$)" \
-        Rscript --no-save $SDIR/getDESeqScaleFactors.R $ODIR/macs/peaks_raw_fcCounts.txt
-fi
+bsub $RUNTIME -o LSF.DESEQ/ -J ${TAG}_DESEQ_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_Count_$$)" \
+    Rscript --no-save $SDIR/getDESeqScaleFactors.R $ODIR/macs/peaks_raw_fcCounts.txt
+
+# if [ "$PEAK_TYPE" == "-n" ]; then
+#   echo PASS
+# fi
+
+mkdir $ODIR/bam
+mv $ODIR/*.ba? $ODIR/bam
+
+mkdir $ODIR/bed
+mv $ODIR/*.bed.gz $ODIR/bed
 
 module unload bedtools
 
