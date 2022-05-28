@@ -146,17 +146,15 @@ Rscript --no-save $SDIR/generateMACSArgs.R $PAIRS $ODIR/*.bed.gz \
     | xargs -n 2 bsub $RUNTIMELONG -o LSF.CALLP/ -J ${TAG}_03_CALLP2_$$ -n 3 -R "rusage[mem=10]" \
         $SDIR/callPeaks_ChIPseq.sh $PEAK_TYPE $GENOME $medianFragmentLength
 
-exit
-
 bSync ${TAG}_03_CALLP2_$$
 
 #fi # DEBUG
 
-bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_MergePeaks_$$ -n 3 -R "rusage[mem=10]" \
+bsub $RUNTIME -o LSF.POST/ -J ${TAG}_MergePeaks_$$ -n 3 -R "rusage[mem=10]" \
     $SDIR/mergePeaksToSAF.sh $ODIR/macs \>$ODIR/macs/macsPeaksMerged.saf
 
 PBAMS=$(ls $ODIR/*_postProcess.bam)
-bsub $RUNTIME -o LSF.CALLP/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_MergePeaks_$$)" \
+bsub $RUNTIME -o LSF.POST/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_MergePeaks_$$)" \
     $SDIR/featureCounts -O -Q 10 -p -T 10 \
         -F SAF -a $ODIR/macs/macsPeaksMerged.saf \
         -o $ODIR/macs/peaks_raw_fcCounts.txt \
