@@ -173,5 +173,20 @@ mv $ODIR/*.ba? $ODIR/bam
 mkdir $ODIR/bed
 mv $ODIR/*.bed.gz $ODIR/bed
 
-module unload bedtools
+Rscript --no-save $SDIR/qc_ChIPSeq_01.R
 
+mkdir $ODIR/qc
+mv *___sigPeaks* $ODIR/qc
+mv *___Volcano* $ODIR/qc
+
+echo
+echo Should create a manifest/group file for stage 2 qc
+echo
+echo and then run
+echo "    Rscript --no-save $SDIR/qc_ChIPSeq_02.R manifest.txt"
+echo "    mv *_ChIPSeqQC_*.pdf $ODIR/qc"
+echo
+
+Rscript --no-save $SDIR/qc_ChIPSeq_02.R results/*_sample_grouping.txt
+
+module unload bedtools

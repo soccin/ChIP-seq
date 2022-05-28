@@ -12,15 +12,17 @@ qCut=0.05
 
 getQCAndWriteSigPeakFile<-function(ff,qCut=0.05) {
 
+    pbase=basename(ff)
+
     dp=read_tsv(ff,comment="#",col_types=cols(chr=col_character()))
     dp.sig=dp %>% arrange(desc(`-log10(qvalue)`)) %>% filter(`-log10(qvalue)`>-log10(qCut))
 
     write.xlsx(
         dp.sig,
-        gsub("_peaks.xls",paste0("___sigPeaks__FDR_",qCut,".xlsx"),ff)
+        gsub("_peaks.xls",paste0("___sigPeaks__FDR_",qCut,".xlsx"),pbase)
         )
 
-    png(gsub("_peaks.xls",paste0("___Volcano__FDR_",qCut,".png"),ff),type="cairo",
+    png(gsub("_peaks.xls",paste0("___Volcano__FDR_",qCut,".png"),pbase),type="cairo",
             units="in", width=8, height=8, pointsize=12, res=150)
 
     sampName=basename(dirname(ff))
