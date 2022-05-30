@@ -163,30 +163,15 @@ bsub $RUNTIME -o LSF.POST/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "post_done(
 bsub $RUNTIME -o LSF.DESEQ/ -J ${TAG}_DESEQ_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_Count_$$)" \
     Rscript --no-save $SDIR/getDESeqScaleFactors.R $ODIR/macs/peaks_raw_fcCounts.txt
 
-# if [ "$PEAK_TYPE" == "-n" ]; then
-#   echo PASS
-# fi
-
-mkdir $ODIR/bam
-mv $ODIR/*.ba? $ODIR/bam
-
-mkdir $ODIR/bed
-mv $ODIR/*.bed.gz $ODIR/bed
-
-Rscript --no-save $SDIR/qc_ChIPSeq_01.R
-
-mkdir $ODIR/qc
-mv *___sigPeaks* $ODIR/qc
-mv *___Volcano* $ODIR/qc
-
-echo
-echo Should create a manifest/group file for stage 2 qc
-echo
-echo and then run
-echo "    Rscript --no-save $SDIR/qc_ChIPSeq_02.R manifest.txt"
-echo "    mv *_ChIPSeqQC_*.pdf $ODIR/qc"
-echo
-
-Rscript --no-save $SDIR/qc_ChIPSeq_02.R results/*_sample_grouping.txt
-
+bSync ${TAG}_DESEQ_$$
 module unload bedtools
+
+echo
+echo "  Run"
+echo "      ChIP-Seq/postPipe.sh $ODIR"
+echo
+echo "  after checking output and LSF logs"
+echo
+echo "  \$ODIR=$ODIR"
+echo
+
