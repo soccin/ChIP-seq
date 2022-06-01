@@ -28,9 +28,9 @@ mv $ODIR/*.bed.gz $ODIR/bed
 
 Rscript --no-save $SDIR/qc_ChIPSeq_01.R
 
-mkdir $ODIR/qc
-mv *___sigPeaks* $ODIR/qc
-mv *___Volcano* $ODIR/qc
+mkdir $ODIR/qc/peaks
+mv *___sigPeaks* $ODIR/qc/peaks
+mv *___Volcano* $ODIR/qc/peaks
 
 echo
 echo Should create a manifest/group file for stage 2 qc

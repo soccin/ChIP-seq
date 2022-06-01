@@ -87,7 +87,7 @@ pp2=ggplot(dp,aes(PC1,PC2,color=Group,label=SampleID)) + theme_light(base_size=1
 
 projNo=unique(gsub("_s_.*","",grep("____",dir("out/macs"),value=T)[1]))
 
-pfile=cc(projNo,"ChIPSeqQC",RUNTAG,".pdf")
+pfile=cc("qcChIPSeq",projNo,RUNTAG,".pdf")
 pdf(pfile,width=11,height=8.5)
 print(pg1)
 print(pg2)
