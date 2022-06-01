@@ -17,6 +17,7 @@ echo ""
 sudo chmod g+ws $RESDIR
 mkdir -p $RESDIR/chipSeq/macs
 mkdir -p $RESDIR/chipSeq/bw
+mkdir -p $RESDIR/chipSeq/qc
 
 if [ -e "./annote" ]; then
     echo "Annotation exists"
@@ -26,3 +27,4 @@ fi
 
 rsync -rvP out/profiles/*.bw $RESDIR/chipSeq/bw
 rsync -rvP out/macs $RESDIR/chipSeq
+rsync -rvP out/qc $RESDIR/chipSeq
