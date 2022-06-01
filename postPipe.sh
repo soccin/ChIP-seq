@@ -40,6 +40,9 @@ echo "    Rscript --no-save $SDIR/qc_ChIPSeq_02.R manifest.txt"
 echo "    mv *_ChIPSeqQC_*.pdf $ODIR/qc"
 echo
 
-Rscript --no-save $SDIR/qc_ChIPSeq_02.R results/*_sample_grouping.txt
+if [ -e manifest.txt ]; then
+    Rscript --no-save $SDIR/qc_ChIPSeq_02.R manifest.txt
+else
+    Rscript --no-save $SDIR/qc_ChIPSeq_02.R results/*_sample_grouping.txt
+fi
 
-module unload bedtools
