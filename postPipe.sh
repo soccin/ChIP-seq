@@ -46,3 +46,4 @@ else
     Rscript --no-save $SDIR/qc_ChIPSeq_02.R results/*_sample_grouping.txt
 fi
 
+cp qcChIPSeq_* $ODIR/qc/

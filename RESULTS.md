@@ -28,6 +28,12 @@ There is also an aggregate peak file there which combines the peaks from all sam
 and a file that counts the coverage for each sample within these combined peaks
 - macs/peaks_raw_fcCounts.txt
 
+_chipSeq/qc_: QC report/plots for ChIP related QC.
+
+- qcChIPSeq_PROJECT-NUM_.xlsx - is a report for the total number of peaks found and the number of significant peaks. Low number of peaks could indicate an issue with the ChIP.
+
+- qcChIPSeq_PROJECT-NUM_.pdf - plots of the number/percentage of mapped reads that fall in MACS peaks and a PCA plot of the aggregate peak counts for the samples.
+
 _chipSeq/bw_:
 Normalized (to 10million reads) bigwig files for loading IP profiles into IGV [http://software.broadinstitute.org/software/igv/].
 
