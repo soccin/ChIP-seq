@@ -28,7 +28,7 @@ mv $ODIR/*.bed.gz $ODIR/bed
 
 Rscript --no-save $SDIR/qc_ChIPSeq_01.R
 
-mkdir $ODIR/qc/peaks
+mkdir -p $ODIR/qc/peaks
 mv *___sigPeaks* $ODIR/qc/peaks
 mv *___Volcano* $ODIR/qc/peaks
 
