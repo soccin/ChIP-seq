@@ -31,9 +31,11 @@ Rscript --no-save $SDIR/qc_ChIPSeq_01.R
 mkdir -p $ODIR/qc/peaks
 mv *___sigPeaks* $ODIR/qc/peaks
 mv *___Volcano* $ODIR/qc/peaks
+cp qcChIPSeq_* $ODIR/qc/
 
 echo
 echo Should create a manifest/group file for stage 2 qc
+echo or use _sample_grouping.txt
 echo
 echo and then run
 echo "    Rscript --no-save $SDIR/qc_ChIPSeq_02.R manifest.txt"
@@ -42,8 +44,10 @@ echo
 
 if [ -e manifest.txt ]; then
     Rscript --no-save $SDIR/qc_ChIPSeq_02.R manifest.txt
-else
-    Rscript --no-save $SDIR/qc_ChIPSeq_02.R results/*_sample_grouping.txt
+    cp qcChIPSeq_* $ODIR/qc/
+    echo
+    echo Maybe run homer annotation
+    echo    ./ChIP-seq/annotateWithHomer.sh
+    echo
 fi
 
-cp qcChIPSeq_* $ODIR/qc/
