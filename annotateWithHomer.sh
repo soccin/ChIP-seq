@@ -17,6 +17,13 @@ if [ "$macsNarrowPeakFile" == "" ]; then
     exit
 fi
 
+echo
+echo
+echo "##########################################"
+echo This is hardcoded to HG19
+echo
+echo
+
 wdir=$(dirname $macsNarrowPeakFile)
 TMPFILE=$wdir/tmpPeaks.bed_$$
 echo TMPFILE=$TMPFILE
