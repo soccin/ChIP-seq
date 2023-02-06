@@ -53,6 +53,7 @@ picardV2 SortSam I=$TDIR/step1.bam O=$TDIR/step2.bam SO=queryname MAX_RECORDS_IN
 samtools fixmate -r $TDIR/step2.bam - >$TDIR/step2b.bam
 samtools view -F 1804 -f 2 -u $TDIR/step2b.bam >$TDIR/step3.bam
 picardV2 SortSam I=$TDIR/step3.bam O=$OBAM SO=coordinate MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true
+ln -s $(realpath ${OBAM/.bam/.bai}) ${OBAM/.bam/.bam.bai}
 
 #
 # Create BED version but keep filter BAM also
