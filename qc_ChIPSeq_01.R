@@ -14,39 +14,53 @@ getQCAndWriteSigPeakFile<-function(ff,qCut=0.05) {
 
     pbase=basename(ff)
 
+    cat("File =",ff,"\n")
+
     dp=read_tsv(ff,comment="#",col_types=cols(chr=col_character()))
     dp.sig=dp %>% arrange(desc(`-log10(qvalue)`)) %>% filter(`-log10(qvalue)`>-log10(qCut))
-
-    write.xlsx(
-        dp.sig,
-        gsub("_peaks.xls",paste0("___sigPeaks__FDR_",qCut,".xlsx"),pbase)
-        )
-
-    png(gsub("_peaks.xls",paste0("___Volcano__FDR_",qCut,".png"),pbase),type="cairo",
-            units="in", width=8, height=8, pointsize=12, res=150)
 
     sampName=basename(dirname(ff))
     numPeaks=nrow(dp)
     numSigPeaks=nrow(dp.sig)
 
-    kk=dp$`-log10(qvalue)`>-log10(qCut)
+    if(numPeaks>0) {
 
-    plot(dp$fold_enrichment,10^(-dp$`-log10(pvalue)`),log="xy",
-        xlim=c(1,max(dp$fold_enrichment)),
-        xlab="FoldEnrichment",ylab="PValue",
-        main=sampName)
-    points(dp$fold_enrichment[kk],10^(-dp$`-log10(pvalue)`)[kk],pch=19,col="darkred")
-    dev.off()
+        if(numSigPeaks>0) {
+            write.xlsx(
+                dp.sig,
+                gsub("_peaks.xls",paste0("___sigPeaks__FDR_",qCut,".xlsx"),pbase)
+                )
+        }
+
+        png(gsub("_peaks.xls",paste0("___Volcano__FDR_",qCut,".png"),pbase),type="cairo",
+                units="in", width=8, height=8, pointsize=12, res=150)
+
+        numPeaks=nrow(dp)
+        numSigPeaks=nrow(dp.sig)
+
+        kk=dp$`-log10(qvalue)`>-log10(qCut)
+
+        plot(dp$fold_enrichment,10^(-dp$`-log10(pvalue)`),log="xy",
+            xlim=c(1,max(dp$fold_enrichment)),
+            xlab="FoldEnrichment",ylab="PValue",
+            main=sampName)
+        points(dp$fold_enrichment[kk],10^(-dp$`-log10(pvalue)`)[kk],pch=19,col="darkred")
+        dev.off()
+
+    }
 
     tibble(
         Sample=sampName,
         TotalPeaks=numPeaks,
         FDR=qCut,
         SigPeaks=numSigPeaks,
-        PCT=SigPeaks/TotalPeaks
+        PCT=ifelse(numPeaks>0,SigPeaks/TotalPeaks,0)
         )
 
+
 }
+
+halt(".INCLUDE")
 
 xx=map(peakFiles,getQCAndWriteSigPeakFile)
 stats=bind_rows(xx)
