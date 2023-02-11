@@ -40,7 +40,9 @@ ds=ds %>%
 pg0=ggplot(ds,aes(Sample,Counts,fill=Status)) +
     theme_light(base_size=16) +
     scale_fill_brewer(palette="Paired") +
-    scale_x_discrete(guide=guide_axis(n.dodge=2))
+    coord_flip()
+    #  +
+    # scale_x_discrete(guide=guide_axis(n.dodge=2))
 
 pg1=pg0 + ggtitle("Mapped Reads in MACS Peaks") +
     geom_bar(stat="identity") +
