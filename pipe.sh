@@ -154,7 +154,7 @@ bsub $RUNTIME -o LSF.POST/ -J ${TAG}_MergePeaks_$$ -n 3 -R "rusage[mem=10]" \
     $SDIR/mergePeaksToSAF.sh $ODIR/macs \>$ODIR/macs/macsPeaksMerged.saf
 
 PBAMS=$(ls $ODIR/*_postProcess.bam)
-bsub $RUNTIME -o LSF.POST/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_MergePeaks_$$)" \
+bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_MergePeaks_$$)" \
     $SDIR/featureCounts -O -Q 10 -p -T 10 \
         -F SAF -a $ODIR/macs/macsPeaksMerged.saf \
         -o $ODIR/macs/peaks_raw_fcCounts.txt \
