@@ -39,14 +39,14 @@ echo or use _sample_grouping.txt
 echo
 echo and then run
 echo "    Rscript --no-save $SDIR/qc_ChIPSeq_02.R manifest.txt"
-echo "    mv *_ChIPSeqQC_*.pdf $ODIR/qc"
+echo "    mv qcChIPSeq_*.pdf qcChIPSeq_*.xlsx $ODIR/qc"
 echo
 
 if [ -e manifest.txt ]; then
     Rscript --no-save $SDIR/qc_ChIPSeq_02.R manifest.txt
     cp qcChIPSeq_* $ODIR/qc/
     echo
-    echo Maybe run homer annotation (but check if HUMAN or fix!!!)
+    echo "Maybe run homer annotation (but check if HUMAN or fix!!!)"
     echo
     echo "    "find out/macs/Proj_\* \| egrep \"broad\|narrow\" \\
     echo "         "\| xargs -n 1 bsub -o LSF.HOMER/ -J HOMER -W 59 -n 6 \\
