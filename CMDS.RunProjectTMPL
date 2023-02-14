@@ -1,0 +1,22 @@
+PROJNO=14065
+
+#ln -s /juno/res/delivery/elenitk/liangh1/Proj_${PROJNO}/r_001/ pipeline
+#git clone git@github.com:soccin/ChIP-seq.git
+
+SDIR=ChIP-seq
+ODIR=out
+PAIRS=Proj_${PROJNO}_sample_pairing.txt
+
+bsub -o LSF.00.CTRL/ -W 359 \
+    ./ChIP-seq/pipe.sh \
+        --pairing-file pipeline/*_sample_pairing.txt \
+        pipeline/alignments/*bam
+
+./ChIP-seq/postPipe.sh out
+
+find out/macs/Proj_* | egrep "broad|narrow" | xargs -n 1 ./ChIP-seq/annotateWithHomer.sh
+
+./ChIP-seq/deliverResults.sh pipeline
+
+
+
