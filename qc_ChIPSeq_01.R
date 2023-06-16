@@ -1,6 +1,8 @@
+suppressPackageStartupMessages({
 require(tidyverse)
 require(fs)
 require(openxlsx)
+})
 
 peakFiles=dir_ls("out/macs",recur=T,regex="peaks.xls$")
 
@@ -60,11 +62,23 @@ getQCAndWriteSigPeakFile<-function(ff,qCut=0.05) {
 
 }
 
-halt(".INCLUDE")
-
 xx=map(peakFiles,getQCAndWriteSigPeakFile)
 stats=bind_rows(xx)
 
-projNo=unique(gsub("_s_.*","",basename(dirname(peakFiles))))
+extract_common_prefix<-function(x) {
+
+    # sort the vector
+    x<-sort(x)
+    # split the first and last element by character
+    d_x<-strsplit(x[c(1,length(x))],"")
+    # search for the first not common element and so, get the last matching one
+    der_com<-match(FALSE,do.call("==",d_x))-1
+    # if there is no matching element, return an empty vector, else return the common part
+    ifelse(der_com==0,return(character(0)),return(substr(x[1],1,der_com)))
+
+}
+
+projNo=extract_common_prefix(basename(peakFiles)) %>% gsub("_$","",.)
 
 write.xlsx(stats,cc("qcChIPSeq",projNo,".xlsx"))
+
