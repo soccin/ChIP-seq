@@ -1,7 +1,5 @@
-fixSampleNames<-function(ss) {
-    gsub("_postProcess.*","",ss) %>%
-        gsub(".*_s_","s_",.) %>%
-        unname
+extractSampleNames<-function(ss,pno,suffix) {
+    gsub(paste0(".*",pno,"_"),"",ss) %>% gsub(suffix,"",.)
 }
 
 #halt("INCLUDE")
@@ -17,25 +15,36 @@ if(len(args)==2) {
     RUNTAG=""
 }
 
+suppressPackageStartupMessages({
 require(tidyverse)
 require(scales)
-
 require(patchwork)
 require(edgeR)
 require(ggrepel)
+})
+
+manifest=read_tsv(args[1],col_names=c("SampleID","Group"))
 
 # require(fs)
 # require(openxlsx)
 
 ds=read_tsv("out/macs/peaks_raw_fcCounts.txt.summary")
 
+#
+# Extract Project No
+#
+
+ci=grep(manifest$SampleID[1],colnames(ds),value=T)
+projNo=basename(ci) %>% gsub(paste0("_",manifest$SampleID[1],".*"),"",.)
+
 ds=ds %>%
     gather(Sample,Count,-Status) %>%
-    mutate(Sample=fixSampleNames(Sample)) %>%
+    mutate(Sample=extractSampleNames(Sample,projNo,"_postProcess.bam")) %>%
     mutate(Status=gsub("_.*","",Status)) %>%
     group_by(Sample,Status) %>%
     summarize(Counts=sum(Count)) %>%
     mutate(Status=ifelse(Status=="Assigned","InPeaks","Outside"))
+
 
 pg0=ggplot(ds,aes(Sample,Counts,fill=Status)) +
     theme_light(base_size=16) +
@@ -58,15 +67,11 @@ dd=read_tsv("out/macs/peaks_raw_fcCounts.txt",comment="#")
 peak.annote=dd %>% select(PeakNo=Geneid,Chr,Start,End,Strand,Length)
 
 d=dd %>%
-    select(PeakNo=Geneid,matches("Proj.*_s_")) %>%
+    select(PeakNo=Geneid,matches("Proj_.*post")) %>%
     data.frame(check.names=F) %>%
     column_to_rownames("PeakNo")
 
-colnames(d)=fixSampleNames(colnames(d))
-
-halt("MANIFEST")
-
-manifest=read_tsv(args[1],col_names=c("SampleID","Group"))
+colnames(d)=extractSampleNames(colnames(d),projNo,"_postProcess.bam")
 
 #
 # Remove excluded points
@@ -86,8 +91,6 @@ dp=pr$rotation %>% data.frame %>% rownames_to_column("SampleID") %>% left_join(m
 
 pp1=ggplot(dp,aes(PC1,PC2,color=Group,label=SampleID)) + theme_light(base_size=16) + geom_point(size=4) + scale_color_brewer(palette="Paired")
 pp2=ggplot(dp,aes(PC1,PC2,color=Group,label=SampleID)) + theme_light(base_size=16) + geom_point(size=2) + scale_color_brewer(palette="Paired") + geom_label_repel(color="black",max.overlaps=nrow(manifest),force=10,force_pull=.1,max.iter=100000)
-
-projNo=unique(gsub("_s_.*","",grep("____",dir("out/macs"),value=T)[1]))
 
 pfile=cc("qcChIPSeq",projNo,RUNTAG,".pdf")
 pdf(pfile,width=11,height=8.5)
