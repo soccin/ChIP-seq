@@ -18,13 +18,15 @@ if [ "$#" -lt "1" ]; then
     usage
 fi
 
-ODIR=$1
+ODIR=$(realpath $1)
 
-mkdir $ODIR/bam
-mv $ODIR/*.ba? $ODIR/bam
+if [ ! -e "$ODIR/bam" ]; then
+    mkdir $ODIR/bam
+    mv $ODIR/*.ba? $ODIR/bam
 
-mkdir $ODIR/bed
-mv $ODIR/*.bed.gz $ODIR/bed
+    mkdir $ODIR/bed
+    mv $ODIR/*.bed.gz $ODIR/bed
+fi
 
 Rscript --no-save $SDIR/qc_ChIPSeq_01.R
 
@@ -33,24 +35,31 @@ mv *___sigPeaks* $ODIR/qc/peaks
 mv *___Volcano* $ODIR/qc/peaks
 cp qcChIPSeq_* $ODIR/qc/
 
-echo
-echo Should create a manifest/group file for stage 2 qc
-echo or use _sample_grouping.txt
-echo
-echo and then run
-echo "    Rscript --no-save $SDIR/qc_ChIPSeq_02.R manifest.txt"
-echo "    mv qcChIPSeq_*.pdf qcChIPSeq_*.xlsx $ODIR/qc"
-echo
+date >01_POST_DONE
+cat << EOF | tee -a 01_POST_DONE
+
+Should create a manifest/group file `manifest.txt` for
+stage 2 qc or use _sample_grouping.txt
+
+and then run
+    Rscript --no-save $SDIR/qc_ChIPSeq_02.R manifest.txt
+    mv qcChIPSeq_*.pdf qcChIPSeq_*.xlsx $ODIR/qc
+
+EOF
 
 if [ -e manifest.txt ]; then
     Rscript --no-save $SDIR/qc_ChIPSeq_02.R manifest.txt
     cp qcChIPSeq_* $ODIR/qc/
-    echo
-    echo "Maybe run homer annotation (but check if HUMAN or fix!!!)"
-    echo
-    echo "    "find out/macs/Proj_\* \| egrep \"broad\|narrow\" \\
-    echo "         "\| xargs -n 1 bsub -o LSF.HOMER/ -J HOMER -W 59 -n 6 \\
-    echo "             "./ChIP-seq/annotateWithHomer.sh
-    echo
+
+cat << EOF | tee -a 01_POST_DONE
+
+Maybe run homer annotation (but check if HUMAN or fix!!!)
+
+    find out/macs/Proj_\* | egrep "broad\|narrow" \
+         | xargs -n 1 bsub -o LSF.HOMER/ -J HOMER -W 59 -n 6 \
+             ./ChIP-seq/annotateWithHomer.sh
+
+EOF
+
 fi
 
