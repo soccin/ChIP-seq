@@ -166,12 +166,17 @@ bsub $RUNTIME -o LSF.DESEQ/ -J ${TAG}_DESEQ_$$ -R "rusage[mem=24]" -w "post_done
 bSync ${TAG}_DESEQ_$$
 module unload bedtools
 
-echo
-echo "  Run"
-echo "      ChIP-Seq/postPipe.sh $ODIR"
-echo
-echo "  after checking output and LSF logs"
-echo
-echo "  \$ODIR=$ODIR"
-echo
+date >00_PIPE_DONE
 
+cat << EOF | tee -a 00_PIPE_DONE
+
+pipe.sh done
+
+  Run
+      ChIP-Seq/postPipe.sh out
+
+  after checking output and LSF logs
+
+  $ODIR=out
+
+EOF
