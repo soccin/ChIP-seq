@@ -42,11 +42,13 @@ getQCAndWriteSigPeakFile<-function(ff,qCut=0.05) {
 
         kk=dp$`-log10(qvalue)`>-log10(qCut)
 
-        plot(dp$fold_enrichment,10^(-dp$`-log10(pvalue)`),log="xy",
+        Qscore=pmax(10^(-dp$`-log10(pvalue)`),.Machine$double.xmin)
+
+        plot(dp$fold_enrichment,Qscore,log="xy",
             xlim=c(1,max(dp$fold_enrichment)),
             xlab="FoldEnrichment",ylab="PValue",
             main=sampName)
-        points(dp$fold_enrichment[kk],10^(-dp$`-log10(pvalue)`)[kk],pch=19,col="darkred")
+        points(dp$fold_enrichment[kk],Qscore[kk],pch=19,col="darkred")
         dev.off()
 
     }
@@ -71,6 +73,8 @@ extract_common_prefix<-function(x) {
     x<-sort(x)
     # split the first and last element by character
     d_x<-strsplit(x[c(1,length(x))],"")
+    minLen=min(map_vec(d_x,len))
+    d_x=map(d_x,~.[1:minLen])
     # search for the first not common element and so, get the last matching one
     der_com<-match(FALSE,do.call("==",d_x))-1
     # if there is no matching element, return an empty vector, else return the common part
@@ -78,7 +82,7 @@ extract_common_prefix<-function(x) {
 
 }
 
-projNo=extract_common_prefix(basename(peakFiles)) %>% gsub("_$","",.)
+projNo=extract_common_prefix(basename(peakFiles)) %>% gsub("(_s_|_)$","",.)
 
 write.xlsx(stats,cc("qcChIPSeq",projNo,".xlsx"))
 
