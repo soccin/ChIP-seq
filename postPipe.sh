@@ -55,9 +55,9 @@ cat << EOF | tee -a 01_POST_DONE
 
 Maybe run homer annotation (but check if HUMAN or fix!!!)
 
-    find out/macs/Proj_\* | egrep "broad\|narrow" \
+    find out/macs/Proj_* | egrep "broad|narrow" \
          | xargs -n 1 bsub -o LSF.HOMER/ -J HOMER -W 59 -n 6 \
-             ./ChIP-seq/annotateWithHomer.sh
+            ./ChIP-seq/annotateWithHomer.sh
 
 EOF
 

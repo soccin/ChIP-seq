@@ -19,12 +19,19 @@ mkdir -p $RESDIR/chipSeq/macs
 mkdir -p $RESDIR/chipSeq/bw
 mkdir -p $RESDIR/chipSeq/qc
 
-if [ -e "./annote" ]; then
+if [ -e "out/annote" ]; then
     echo "Annotation exists"
     mkdir -p $RESDIR/chipSeq/annote
-    rsync -rvP annote $RESDIR/chipSeq
+    rsync -rvP out/annote $RESDIR/chipSeq
 fi
 
 rsync -rvP out/profiles/*.bw $RESDIR/chipSeq/bw
 rsync -rvP out/macs $RESDIR/chipSeq
 rsync -rvP out/qc $RESDIR/chipSeq
+
+if [ -e "out/diff" ]; then
+    echo "Diff Analysis Exists"
+    mkdir -p $RESDIR/chipSeq/diff
+    rsync -rvP out/diff $RESDIR/chipSeq
+fi
+
