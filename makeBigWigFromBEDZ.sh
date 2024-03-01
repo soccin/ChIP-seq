@@ -1,8 +1,11 @@
 #!/bin/bash
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
-export PYTHONPATH=/opt/common/CentOS_6/MACS2/MACS2-2.1.1/lib/python2.7/site-packages/:$PYTHONPATH
-MACS=/opt/common/CentOS_6/MACS2/MACS2-2.1.1/bin/macs2
+set -e
+
+. $SDIR/venv/bin/activate
+MACS=$SDIR/venv/bin/macs2
+module load bedtools/2.29.2 
 
 GBUILD=$1
 BEDZ=$2
