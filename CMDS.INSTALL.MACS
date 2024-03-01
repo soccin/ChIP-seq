@@ -1,0 +1,11 @@
+PROOT=/data/bicgrp/opt/common/CentOS_7/python/Python-3.9.18
+$PROOT/bin/python3 -m venv venv
+. venv/bin/activate
+
+pip install --upgrade pip
+
+pip install numpy
+pip install matplotlib
+pip install MACS2
+
+deactivate
