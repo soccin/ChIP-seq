@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -e 
+
+module load samtools
+
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
 ODIR=$1

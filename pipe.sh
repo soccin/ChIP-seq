@@ -6,12 +6,22 @@
 
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
+if [ ! -e "$SDIR/venv" ]; then
+    echo
+    echo "   Need to install macs2"
+    echo "   Info in CMD.INSTALL.MACS"
+    echo
+    exit 1
+fi
+
 SCRIPT_VERSION=$(git --git-dir=$SDIR/.git --work-tree=$SDIR describe --always --long)
 PIPENAME="ChIP-Seq"
 
 module load bedtools
 
 source $SDIR/lsf.sh
+
+export PATH=$SDIR/bin:$PATH
 
 ##
 # Process command args
