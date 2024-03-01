@@ -1,0 +1,20 @@
+#!/bin/bash
+
+LSFBIN=/admin/lsflilac/lsf/10.1/linux3.10-glibc2.17-x86_64/bin
+
+JOBNAME=$1
+
+echo $JOBNAME
+
+getLastJobNo() {
+    $LSFBIN/bjobs -UF | fgrep "Job Name" | grep -P "<$JOBNAME>" \
+        | tail -1 | perl -ne '/Job <(\d+)>/;print "$1\n"'
+}
+
+HOLDJOB=$(getLastJobNo)
+while [ "$HOLDJOB" != "" ]; do
+    echo "JOB =" $JOBNAME "holding on jid =" $HOLDJOB
+    $LSFBIN/bsub -W 1 -w "post_done($HOLDJOB)" -J bSync_${JOBNAME}_$$ -K echo "$JOBNAME"
+    sleep 3
+    HOLDJOB=$(getLastJobNo)
+done
