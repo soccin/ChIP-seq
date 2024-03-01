@@ -2,6 +2,8 @@
 
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
+source $SDIR/bsub
+
 SCRIPT_VERSION=$(git --git-dir=$SDIR/.git --work-tree=$SDIR describe --always --long)
 PIPENAME="ChIP-Seq"
 

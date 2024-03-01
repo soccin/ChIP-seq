@@ -11,6 +11,8 @@ PIPENAME="ChIP-Seq"
 
 module load bedtools
 
+source $SDIR/lsf.sh
+
 ##
 # Process command args
 
