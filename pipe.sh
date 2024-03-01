@@ -4,6 +4,8 @@
 #    bsub -n 1 -q control -o LSF.CTRL/ -J CTRL.ChIP ./pipe.sh
 #
 
+set -e
+
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
 if [ ! -e "$SDIR/venv" ]; then
@@ -107,19 +109,22 @@ mkdir -p $ODIR
 RUNTIME="-W 59"
 RUNTIMELONG="-W 359"
 
+echo -e "\n#######################################################################\n"
+echo -e "Starting Stage1 - Bam Postprocessing\n\n"
+
 #if [ "" ]; then
 if [ $SE = "No" ]; then
 
     if [ $PROPER_PAIR = "Yes" ]; then
 
         echo $BAMS \
-            | xargs -n 1 bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_01_POST2_$$ -R "rusage[mem=24]" \
+            | xargs -n 1 bsub $RUNTIMELONG -o LSF.00.POST/ -J ${TAG}_01_POST2_$$ -R "rusage[mem=24]" \
                 $SDIR/postMapBamProcessing_ChIPSeq.sh $ODIR
 
     else
 
         echo $BAMS \
-            | xargs -n 1 bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_01_POST2_$$ -R "rusage[mem=24]" \
+            | xargs -n 1 bsub $RUNTIMELONG -o LSF.00.POST/ -J ${TAG}_01_POST2_$$ -R "rusage[mem=24]" \
                 $SDIR/postMapBamProcessing_ChIPSeq_NoPP.sh $ODIR
 
 
@@ -128,15 +133,18 @@ if [ $SE = "No" ]; then
 else
 
     echo $BAMS \
-        | xargs -n 1 bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_01_POST2_$$ -R "rusage[mem=24]" \
+        | xargs -n 1 bsub $RUNTIMELONG -o LSF.00.POST/ -J ${TAG}_01_POST2_$$ -R "rusage[mem=24]" \
             $SDIR/postMapBamProcessing_ChIPSeq_SE.sh $ODIR
 
 fi
 
 bSync ${TAG}_01_POST2_$$
 
+echo -e "\n#######################################################################\n"
+echo -e "Starting Stage2 - Making BW files\n\n"
+
 ls $ODIR/*.bed.gz \
-    | xargs -n 1 bsub $RUNTIMELONG -o LSF.BW/ -J ${TAG}_02_BW2_$$ -R "rusage[mem=24]" \
+    | xargs -n 1 bsub $RUNTIMELONG -o LSF.01.BW/ -J ${TAG}_02_BW2_$$ -R "rusage[mem=24]" \
         $SDIR/makeBigWigFromBEDZ.sh $GENOME
 
 bSync ${TAG}_02_BW2_$$
@@ -144,6 +152,9 @@ bSync ${TAG}_02_BW2_$$
 medianFragmentLength=$(Rscript --no-save $SDIR/getMedianFragmentLengthFromPredictDFile.R $ODIR/profiles/*.log)
 
 echo "medianFragmentLength =" $medianFragmentLength
+
+echo -e "\n#######################################################################\n"
+echo -e "Starting Stage3 - Peak Calling (MACS) \n\n"
 
 if [ "$PAIRS" == "" ]; then
     echo
@@ -154,25 +165,42 @@ if [ "$PAIRS" == "" ]; then
     exit
 fi
 
-Rscript --no-save $SDIR/generateMACSArgs.R $PAIRS $ODIR/*.bed.gz \
-    | xargs -n 2 bsub $RUNTIMELONG -o LSF.CALLP/ -J ${TAG}_03_CALLP2_$$ -n 3 -R "rusage[mem=10]" \
+Rscript --no-save $SDIR/generateMACSArgs.R $PAIRS $ODIR/*.bed.gz > $ODIR/macsPairs.txt
+if [ "$?" != 0 ]; then
+    echo
+    echo generateMACSArgs.R failed
+    echo
+    exit 1
+fi
+
+cat $ODIR/macsPairs.txt \
+    | xargs -n 2 bsub $RUNTIMELONG -o LSF.03.CALLP/ -J ${TAG}_03_CALLP2_$$ -n 3 -R "rusage[mem=10]" \
         $SDIR/callPeaks_ChIPseq.sh $PEAK_TYPE $GENOME $medianFragmentLength
 
 bSync ${TAG}_03_CALLP2_$$
 
 #fi # DEBUG
 
-bsub $RUNTIME -o LSF.POST/ -J ${TAG}_MergePeaks_$$ -n 3 -R "rusage[mem=10]" \
+echo -e "\n#######################################################################\n"
+echo -e "Starting Stage4 - Merge Peaks \n\n"
+
+bsub $RUNTIME -o LSF.04.POST/ -J ${TAG}_MergePeaks_$$ -n 3 -R "rusage[mem=10]" \
     $SDIR/mergePeaksToSAF.sh $ODIR/macs \>$ODIR/macs/macsPeaksMerged.saf
 
+echo -e "\n#######################################################################\n"
+echo -e "Starting Stage5 - Peaks Counts \n\n"
+
 PBAMS=$(ls $ODIR/*_postProcess.bam)
-bsub $RUNTIMELONG -o LSF.POST/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_MergePeaks_$$)" \
+bsub $RUNTIMELONG -o LSF.05.POST/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_MergePeaks_$$)" \
     $SDIR/featureCounts -O -Q 10 -p -T 10 \
         -F SAF -a $ODIR/macs/macsPeaksMerged.saf \
         -o $ODIR/macs/peaks_raw_fcCounts.txt \
         $PBAMS
 
-bsub $RUNTIME -o LSF.DESEQ/ -J ${TAG}_DESEQ_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_Count_$$)" \
+echo -e "\n#######################################################################\n"
+echo -e "Starting Stage6 - Get Scale Factors (MACS) \n\n"
+
+bsub $RUNTIME -o LSF.06.DESEQ/ -J ${TAG}_DESEQ_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_Count_$$)" \
     Rscript --no-save $SDIR/getDESeqScaleFactors.R $ODIR/macs/peaks_raw_fcCounts.txt
 
 bSync ${TAG}_DESEQ_$$

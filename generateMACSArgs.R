@@ -10,7 +10,13 @@ pairs=read_tsv(pairingFile,col_names=F,col_type=cols())
 
 for(ii in seq(nrow(pairs))) {
 
-    target=grep(paste0(pairs$X2[ii],"_postProcess"),inputs,value=T)
+    target=grep(paste0(pairs$X2[ii],"_.*postProcess"),inputs,value=T)
+
+    if(len(target)!=1) {
+        cat("\n\nCan not find target sample",pairs$X2[ii],"\n",file=stderr())
+        cat("\n\n",file=stderr())
+        rlang::abort("FATAL::ERROR")
+    }
 
     if(!(pairs$X1[ii] %in% c("NA","na","_na","_NA"))) {
 
