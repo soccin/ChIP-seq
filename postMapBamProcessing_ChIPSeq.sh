@@ -59,6 +59,8 @@ samtools view -F 1804 -f 2 -u $TDIR/step2b.bam >$TDIR/step3.bam
 picardV2 SortSam I=$TDIR/step3.bam O=$OBAM SO=coordinate MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true
 ln -s $(realpath ${OBAM/.bam/.bai}) ${OBAM/.bam/.bam.bai}
 
+rm $TDIR/step1.bam $TDIR/step2.bam $TDIR/step2b.bam
+
 #
 # Create BED version but keep filter BAM also
 #
@@ -68,3 +70,4 @@ samtools view -b $OBAM \
     | gzip -nc >${OBAM/.bam/.clean.bed.gz}
 
 #rm -rf $TDIR
+rm $TDIR/step3.bam
