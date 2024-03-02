@@ -4,6 +4,8 @@ require(fs)
 require(openxlsx)
 })
 
+source("ChIP-seq/tools.R")
+
 peakFiles=dir_ls("out/macs",recur=T,regex="peaks.xls$")
 
 qCut=0.05
@@ -82,7 +84,7 @@ extract_common_prefix<-function(x) {
 
 }
 
-projNo=extract_common_prefix(basename(peakFiles)) %>% gsub("(_s_|_)$","",.)
+projNo=get_project_number()
 
 write.xlsx(stats,cc("qcChIPSeq",projNo,".xlsx"))
 
