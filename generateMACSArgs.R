@@ -20,7 +20,7 @@ for(ii in seq(nrow(pairs))) {
 
     if(!(pairs$X1[ii] %in% c("NA","na","_na","_NA"))) {
 
-        control=grep(paste0(pairs$X1[ii],"_postProcess"),inputs,value=T)
+        control=grep(paste0(pairs$X1[ii],"_.*postProcess"),inputs,value=T)
 
         if(len(control)==0) {
             control="_NoCTRL"
