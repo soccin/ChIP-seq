@@ -213,7 +213,8 @@ cat << EOF | tee -a 00_PIPE_DONE
 pipe.sh done
 
   Run
-      ChIP-Seq/postPipe.sh out
+
+      ChIP-seq/postPipe.sh out
 
   after checking output and LSF logs
 
