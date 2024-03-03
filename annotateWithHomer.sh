@@ -1,7 +1,16 @@
 #/bin/bash
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
-HOMERBIN=/juno/work/bic/socci/tools/HOMER/bin
+HOMERBIN=/lila/data/bicgrp/socci/work/homer/bin
+
+if [ ! -e "$HOMERBIN" ]; then
+    echo -e "\n\nNeed to install HOMER\n"
+    echo -e "Start with  wget http://homer.ucsd.edu/homer/configureHomer.pl"
+    echo -e "and set HOMERBIN [current:${HOMERBIN}]"
+    echo
+    exit
+fi
+
 export PATH=$HOMERBIN:$PATH
 mkdir -p annote
 
