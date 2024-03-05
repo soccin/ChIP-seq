@@ -106,8 +106,8 @@ echo GENOME=$GENOME
 
 mkdir -p $ODIR
 
-RUNTIME="-W 59"
-RUNTIMELONG="-W 359"
+RUNTIME="-W 359"
+RUNTIMELONG="-W 12:00"
 
 echo -e "\n#######################################################################\n"
 echo -e "Starting Stage1 - Bam Postprocessing\n\n"
