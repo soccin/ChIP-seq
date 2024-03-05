@@ -42,7 +42,7 @@ MAPQ=30
 # REMOVE this we do not want to force proper pairs for this one f 2 ==> proper pair
 # F 1804 ==> unmapped, mate unmapped, not primary, fails QC, duplicate
 ## F 3852 (1804+2048) 2048==Supplementary Alignment
-samtools view -q $MAPQ -f 2 -F 3852 -L $TDIR/regionsToKeep_$$ $IBAM -u >$TDIR/step1.bam
+samtools view -b -q $MAPQ -f 2 -F 3852 -L $TDIR/regionsToKeep_$$ $IBAM >$TDIR/step1.bam
 
 # From ENCODE
 # Remove orphan reads (pair was removed)
@@ -57,7 +57,7 @@ picardV2 SortSam I=$TDIR/step1.bam O=$TDIR/step2.bam SO=queryname MAX_RECORDS_IN
 rm $TDIR/step1.bam
 samtools fixmate -r $TDIR/step2.bam - >$TDIR/step2b.bam
 rm $TDIR/step2.bam
-samtools view -F 1804 -f 2 -u $TDIR/step2b.bam >$TDIR/step3.bam
+samtools view -b -F 1804 -f 2 $TDIR/step2b.bam >$TDIR/step3.bam
 rm $TDIR/step2b.bam
 picardV2 SortSam I=$TDIR/step3.bam O=$OBAM SO=coordinate MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true
 ln -s $(realpath ${OBAM/.bam/.bai}) ${OBAM/.bam/.bam.bai}
