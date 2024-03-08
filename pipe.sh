@@ -107,12 +107,13 @@ echo GENOME=$GENOME
 mkdir -p $ODIR
 
 RUNTIME="-W 359"
-RUNTIMELONG="-W 12:00"
+RUNTIMELONG="-W 24:00"
 
 echo -e "\n#######################################################################\n"
 echo -e "Starting Stage1 - Bam Postprocessing\n\n"
 
-#if [ "" ]; then
+#if [ "" ]; then # Skip Stage 1,2
+
 if [ $SE = "No" ]; then
 
     if [ $PROPER_PAIR = "Yes" ]; then
@@ -144,10 +145,11 @@ echo -e "\n#####################################################################
 echo -e "Starting Stage2 - Making BW files\n\n"
 
 ls $ODIR/*.bed.gz \
-    | xargs -n 1 bsub $RUNTIMELONG -o LSF.01.BW/ -J ${TAG}_02_BW2_$$ -R "rusage[mem=24]" \
+    | xargs -n 1 bsub $RUNTIMELONG -o LSF.01.BW/ -J ${TAG}_02_BW2_$$ -n 4 -R "rusage[mem=10]" \
         $SDIR/makeBigWigFromBEDZ.sh $GENOME
 
 bSync ${TAG}_02_BW2_$$
+#fi # Skip stage 1 and 2
 
 medianFragmentLength=$(Rscript --no-save $SDIR/getMedianFragmentLengthFromPredictDFile.R $ODIR/profiles/*.log)
 
@@ -174,12 +176,10 @@ if [ "$?" != 0 ]; then
 fi
 
 cat $ODIR/macsPairs.txt \
-    | xargs -n 2 bsub $RUNTIMELONG -o LSF.03.CALLP/ -J ${TAG}_03_CALLP2_$$ -n 3 -R "rusage[mem=10]" \
+    | xargs -n 2 bsub $RUNTIME -o LSF.03.CALLP/ -J ${TAG}_03_CALLP2_$$ -n 3 -R "rusage[mem=10]" \
         $SDIR/callPeaks_ChIPseq.sh $PEAK_TYPE $GENOME $medianFragmentLength
 
 bSync ${TAG}_03_CALLP2_$$
-
-#fi # DEBUG
 
 echo -e "\n#######################################################################\n"
 echo -e "Starting Stage4 - Merge Peaks \n\n"
@@ -200,7 +200,7 @@ bsub $RUNTIMELONG -o LSF.05.POST/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "pos
 echo -e "\n#######################################################################\n"
 echo -e "Starting Stage6 - Get Scale Factors (MACS) \n\n"
 
-bsub $RUNTIME -o LSF.06.DESEQ/ -J ${TAG}_DESEQ_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_Count_$$)" \
+bsub $RUNTIMELONG -o LSF.06.DESEQ/ -J ${TAG}_DESEQ_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_Count_$$)" \
     Rscript --no-save $SDIR/getDESeqScaleFactors.R $ODIR/macs/peaks_raw_fcCounts.txt
 
 bSync ${TAG}_DESEQ_$$
