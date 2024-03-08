@@ -80,6 +80,14 @@ mkdir -p $ODIR
 # echo $TDIR, $ODIR
 # export TMPDIR=$TDIR
 
+if [ -e /fscratch ]; then 
+    TMPDIR=/fscratch/socci
+else
+    TMPDIR=/scratch/socci
+fi
+
+mkdir -p $TMPDIR
+
 #
 # From:
 #   https://github.com/ENCODE-DCC/chip-seq-pipeline/blob/master/dnanexus/macs2/src/macs2.py
