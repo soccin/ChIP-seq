@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LSFBIN=/admin/lsflilac/lsf/10.1/linux3.10-glibc2.17-x86_64/bin
+LSFBIN=/common/juno/OS7/10.1/linux3.10-glibc2.17-x86_64/bin
 
 JOBNAME=$1
 
