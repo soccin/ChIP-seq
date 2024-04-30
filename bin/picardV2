@@ -1,8 +1,11 @@
 #!/bin/bash
 
-module load java/jdk-17.0.10
+JAVA_V17_LATEST=$(module avail 2>&1 | fgrep java | fgrep 17 | sort -Vr | head -1)
 
-PICARDJAR=/lila/home/socci/Code/Picard/jar/2.25.5/picard.jar
+module load $JAVA_V17_LATEST
+
+SDIR="$( cd "$( dirname "$0" )" && pwd )"
+PICARDJAR=$SDIR/jar/2.25.5/picard.jar
 
 COMMAND=$1
 shift 1
