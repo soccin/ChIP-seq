@@ -5,7 +5,7 @@ if [ "$#" != "1" ]; then
     exit
 fi
 
-module load samtools/1.10
+module load samtools
 SAMTOOLS=samtools
 
 GENOME_MD5=$($SAMTOOLS view -H $1 | egrep "^@SQ" | cut -f-3 | sort  | md5sum - | awk '{print $1}')
