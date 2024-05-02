@@ -1,7 +1,7 @@
 #/bin/bash
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
-HOMERBIN=/lila/data/bicgrp/socci/work/homer/bin
+HOMERBIN=/juno/bic/work/socci/opt/common/CentOS_7/Homer/bin
 
 if [ ! -e "$HOMERBIN" ]; then
     echo -e "\n\nNeed to install HOMER\n"
