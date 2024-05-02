@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eu
+
 RESDIR=$1
 
 if [ "$RESDIR" == "" ]; then
@@ -34,4 +36,5 @@ if [ -e "out/diff" ]; then
     mkdir -p $RESDIR/chipSeq/diff
     rsync -rvP out/diff $RESDIR/chipSeq
 fi
+
 
