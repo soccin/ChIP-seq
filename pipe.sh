@@ -4,7 +4,7 @@
 #    bsub -n 1 -q control -o LSF.CTRL/ -J CTRL.ChIP ./pipe.sh
 #
 
-set -e
+set -eu
 
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
@@ -221,3 +221,26 @@ pipe.sh done
   $ODIR=out
 
 EOF
+
+
+##############################################################################
+##############################################################################
+# Write cmdLog
+#
+CMD_LOG=$ODIR/pipeline_info/cmd.sh.log
+mkdir -p $(dirname $CMD_LOG)
+
+GTAG=$(git --git-dir=$SDIR/.git --work-tree=$SDIR describe --all --long --tags --dirty="-UNCOMMITED" --always)
+GURL=$(git --git-dir=$SDIR/.git --work-tree=$SDIR config --get remote.origin.url)
+
+cat <<-END_VERSION > $CMD_LOG
+DATE: $(date)
+SDIR: $SDIR
+GURL: $GURL
+GTAG: $GTAG
+PWD: $PWD
+
+Script: $0 $*
+END_VERSION
+##############################################################################
+##############################################################################
