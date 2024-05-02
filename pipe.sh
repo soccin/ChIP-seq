@@ -8,6 +8,8 @@ set -eu
 
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
+ORIG_CMD=$*
+
 if [ ! -e "$SDIR/venv" ]; then
     echo
     echo "   Need to install macs2"
@@ -240,7 +242,14 @@ GURL: $GURL
 GTAG: $GTAG
 PWD: $PWD
 
-Script: $0 $*
+PROPER_PAIR: $PROPER_PAIR
+PEAK_TYPE: $PEAK_TYPE
+SE: $SE
+BAMS: $BAMS
+GENOME: $GENOME
+
+
+Script: $0 $ORIG_CMD
 END_VERSION
 ##############################################################################
 ##############################################################################
