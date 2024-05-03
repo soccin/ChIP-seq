@@ -20,6 +20,7 @@ sudo chmod g+ws $RESDIR
 mkdir -p $RESDIR/chipSeq/macs
 mkdir -p $RESDIR/chipSeq/bw
 mkdir -p $RESDIR/chipSeq/qc
+mkdir -p $RESDIR/chipSeq/pipeline_info
 
 if [ -e "out/annote" ]; then
     echo "Annotation exists"
@@ -37,4 +38,4 @@ if [ -e "out/diff" ]; then
     rsync -rvP out/diff $RESDIR/chipSeq
 fi
 
-
+cp out/pipeline_info/* $RESDIR/chipSeq/pipeline_info
