@@ -40,7 +40,7 @@ cp qcChIPSeq_* $ODIR/qc/
 date >01_POST_DONE
 cat << EOF | tee -a 01_POST_DONE
 
-Should create a manifest/group file `manifest.txt` for
+Should create a manifest/group file "manifest.txt" for
 stage 2 qc or use _sample_grouping.txt
 
 and then run
