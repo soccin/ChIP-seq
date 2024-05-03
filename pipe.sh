@@ -232,7 +232,7 @@ EOF
 CMD_LOG=$ODIR/pipeline_info/cmd.sh.log
 mkdir -p $(dirname $CMD_LOG)
 
-GTAG=$(git --git-dir=$SDIR/.git --work-tree=$SDIR describe --all --long --tags --dirty="-UNCOMMITED" --always)
+GTAG=$(git --git-dir=$SDIR/.git --work-tree=$SDIR describe --long --tags --dirty="-UNCOMMITED" --always)
 GURL=$(git --git-dir=$SDIR/.git --work-tree=$SDIR config --get remote.origin.url)
 
 cat <<-END_VERSION > $CMD_LOG
