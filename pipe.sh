@@ -194,7 +194,7 @@ echo -e "Starting Stage5 - Peaks Counts \n\n"
 
 PBAMS=$(ls $ODIR/*_postProcess.bam)
 bsub $RUNTIMELONG -o LSF.05.POST/ -J ${TAG}_Count_$$ -R "rusage[mem=24]" -w "post_done(${TAG}_MergePeaks_$$)" \
-    $SDIR/featureCounts -O -Q 10 -p -T 10 \
+    $SDIR/bin/featureCounts -O -Q 10 -p -T 10 \
         -F SAF -a $ODIR/macs/macsPeaksMerged.saf \
         -o $ODIR/macs/peaks_raw_fcCounts.txt \
         $PBAMS
