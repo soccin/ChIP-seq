@@ -1,15 +1,11 @@
 # ChIP-Seq pipeline
 
-## Version 2.0 (2020-12-16): Match ENCODE 3
-## BRANCH master: JUNO LSF
+## Version 0.7.2
 
 ### Differential Peak Reference
 
 https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02686-y
 
-
-
-This version modified to run on JUNO
 
 - Example run command:
 ```{bash}
