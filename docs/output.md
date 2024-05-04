@@ -1,4 +1,4 @@
-# Results for ChIPSeq Pipeline
+# Results for ChIPSeq Pipeline (v0.7.x)
 
 Output folders:
 
