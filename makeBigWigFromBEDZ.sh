@@ -5,7 +5,7 @@ set -e
 
 . $SDIR/venv/bin/activate
 MACS=$SDIR/venv/bin/macs2
-module load bedtools/2.29.2 
+module load bedtools
 
 GBUILD=$1
 BEDZ=$2
