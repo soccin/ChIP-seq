@@ -73,4 +73,6 @@ zcat $BEDZ \
     | $SDIR/bin/wigToBigWig stdin $GENOME $OUT
 
 mkdir -p $ODIR/$OUTPREDICT
-$MACS predictd -g $MACS_GENOME -i $BEDZ --outdir $ODIR/$OUTPREDICT 2> $ODIR/${OUTPREDICT}.log
+$MACS predictd \
+    -g $MACS_GENOME -i $BEDZ --outdir $ODIR/$OUTPREDICT 2>&1 \
+    | tee $ODIR/${OUTPREDICT}.log
