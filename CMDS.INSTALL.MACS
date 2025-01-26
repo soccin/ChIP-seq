@@ -1,11 +1,12 @@
-#PROOT=/data/bicgrp/opt/common/CentOS_7/python/Python-3.9.18
-python3 -m venv venv
+#
+# Need to use python3.10.x
+#
+PYTHONBIN=/juno/bic/work/socci/opt/common/CentOS_7/python/python-3.10.2/bin
+$PYTHONBIN/python3 -m venv venv
 . venv/bin/activate
 
 pip install --upgrade pip
 
-pip install numpy
-pip install matplotlib
 pip install MACS2
 
 deactivate
