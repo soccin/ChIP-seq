@@ -39,3 +39,19 @@ if [ -e "out/diff" ]; then
 fi
 
 cp out/pipeline_info/* $RESDIR/chipSeq/pipeline_info
+
+PROJNO=$(echo $RESDIR | tr '/' '\n' | fgrep Proj_ | sed 's/Proj_//')
+
+cat <<EOF
+
+ChIPSeq project $PROJNO results ready
+
+The outputs for project Proj_$PROJNO are ready.
+
+You can access them on the BIC server at:
+
+	https://bicdelivery.mskcc.org/project/$PROJNO/chipseq/r_001
+
+<<COPY_PASTE ChIPSeq/docs/RESULTS.md>>
+
+EOF
