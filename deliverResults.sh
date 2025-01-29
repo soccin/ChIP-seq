@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -eu
-
 RESDIR=$1
 
 if [ "$RESDIR" == "" ]; then
@@ -11,6 +9,8 @@ if [ "$RESDIR" == "" ]; then
     echo
     exit
 fi
+
+set -eu
 
 echo ""
 echo "Need sudo to chmod output folder"
