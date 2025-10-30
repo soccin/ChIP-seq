@@ -2,6 +2,10 @@
 
 ## Version 0.7.2
 
+### SETUP
+
+See CMDS.INSTALL.MACS for info
+
 ### Differential Peak Reference
 
 https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02686-y
