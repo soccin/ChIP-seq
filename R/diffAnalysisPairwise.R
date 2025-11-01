@@ -61,41 +61,50 @@ EXAMPLE USAGE:
 
 #' Fix sample names based on naming convention
 #'
-#' @param ss Character vector of sample names
-#' @return Character vector of fixed sample names
-fix_sample_names <- function(ss) {
-  if (grepl("___MD", ss[1])) {
-    fix_sample_names_pemap(ss)
+#' Detects whether samples use PEmap or BIC naming and applies the appropriate
+#' transformation to match the sample manifest.
+#'
+#' @param sample_names Character vector of raw sample names
+#' @return Character vector of cleaned sample names matching manifest
+fix_sample_names <- function(sample_names) {
+  if (grepl("___MD", sample_names[1])) {
+    fix_sample_names_pemap(sample_names)
   } else {
-    fix_sample_names_bic(ss)
+    fix_sample_names_bic(sample_names)
   }
 }
 
-#' Fix sample names using BIC convention
+#' Fix sample names using BIC naming convention
 #'
-#' @param ss Character vector of sample names
-#' @return Character vector of fixed sample names
-fix_sample_names_bic <- function(ss) {
-  ss %>%
-    gsub("_postProcess.*", "", .) %>%
-    gsub(".*_s_", "s_", .) %>%
-    (\(x) sampRename[x])() %>%
+#' Removes processing suffixes and path prefixes, then maps to manifest IDs.
+#'
+#' @param sample_names Character vector of BIC-format sample names
+#' @return Character vector of cleaned sample names
+fix_sample_names_bic <- function(sample_names) {
+  sample_names |>
+    gsub("_postProcess.*", "", x = _) |>
+    gsub(".*_s_", "s_", x = _) |>
+    (\(x) sampRename[x])() |>
     unname()
 }
 
-#' Fix sample names using PEmap convention
+#' Fix sample names using PEmap naming convention
 #'
-#' @param ss Character vector of sample names
-#' @return Character vector of fixed sample names
-fix_sample_names_pemap <- function(ss) {
-  ss %>%
-    basename() %>%
-    gsub("___.*", "", .) %>%
-    (\(x) sampRename[x])() %>%
+#' Extracts basename and removes PEmap suffixes, then maps to manifest IDs.
+#'
+#' @param sample_names Character vector of PEmap-format sample names
+#' @return Character vector of cleaned sample names
+fix_sample_names_pemap <- function(sample_names) {
+  sample_names |>
+    basename() |>
+    gsub("___.*", "", x = _) |>
+    (\(x) sampRename[x])() |>
     unname()
 }
 
-#' Create reverse log transformation for ggplot2
+#' Create reverse log transformation for ggplot2 volcano plots
+#'
+#' Transforms p-values so smaller values appear higher on the y-axis.
 #'
 #' @param base Numeric base for logarithm (default: e)
 #' @return A transformation object for ggplot2 scales
@@ -118,7 +127,8 @@ reverselog_trans <- function(base = exp(1)) {
 #' @param height Numeric height in inches (default: 8.5)
 #' @param pointsize Numeric point size for text (default: 12)
 #' @param res Numeric resolution in DPI (default: 150)
-png_cairo <- function(filename, width = 14, height = 8.5, pointsize = 12, res = 150) {
+png_cairo <- function(filename, width = 14, height = 8.5, pointsize = 12,
+                      res = 150) {
   png(
     filename,
     type = "cairo",
@@ -130,8 +140,7 @@ png_cairo <- function(filename, width = 14, height = 8.5, pointsize = 12, res = 
   )
 }
 
-
-#' Merge PNG files into a single PDF
+#' Merge PNG files into a single PDF using ImageMagick
 #'
 #' @param file_spec Character file specification with printf-style formatting
 merge_pngs <- function(file_spec) {
@@ -144,21 +153,32 @@ merge_pngs <- function(file_spec) {
   )
 }
 
-# Load required libraries
-library(ChIPseeker)
-library(AnnotationDbi)
-library(patchwork)
-library(scales)
-library(edgeR)
-library(ggrepel)
-library(ggsci)
-library(tidyverse)
-library(fs)
-library(openxlsx)
-library(ggrastr)
+cat("Loading libraries ...")
+suppressPackageStartupMessages({
+  library(ChIPseeker)
+  library(AnnotationDbi)
+  library(patchwork)
+  library(scales)
+  library(edgeR)
+  library(ggrepel)
+  library(ggsci)
+  library(tidyverse)
+  library(fs)
+  library(openxlsx)
+  library(ggrastr)
+})
+cat(" done\n")
 
-# Read feature counts summary
-ds <- read_tsv("peaks_raw_fcCounts.txt.summary")
+# Locate feature counts summary file
+# Works with both ATACseq and ChIPSeq pipeline structures
+peak_counts_file <- fs::dir_ls(regex = "peaks_raw_fcCounts.txt.summary")
+
+if (len(peak_counts_file) == 0) {
+  peak_counts_file <- fs::dir_ls("out/macs",
+                                 regex = "peaks_raw_fcCounts.txt.summary")
+}
+
+feature_summary <- read_tsv(peak_counts_file)
 
 # Parse command line arguments
 GENOME <- args[1]
@@ -185,8 +205,8 @@ manifest <- read_csv(MANIFEST_FILE) |> arrange(SampleID)
 sampRename <- manifest$SampleID
 names(sampRename) <- manifest$MapID
 
-# Process feature counts summary
-ds <- ds |>
+# Process feature counts summary for QC
+feature_summary <- feature_summary |>
   gather(Sample, Count, -Status) |>
   mutate(Sample = fix_sample_names(Sample)) |>
   mutate(Status = gsub("_.*", "", Status)) |>
@@ -194,58 +214,65 @@ ds <- ds |>
   summarize(Counts = sum(Count), .groups = "drop") |>
   mutate(Status = ifelse(Status == "Assigned", "InPeaks", "Outside"))
 
-# Load raw feature counts
-dd <- read_tsv("peaks_raw_fcCounts.txt", comment = "#")
+# Load raw feature counts matrix
+raw_counts <- read_tsv(gsub(".txt.summary$", ".txt", peak_counts_file),
+                       comment = "#")
 
 # Extract peak annotation
-peak.annote <- dd |> select(PeakNo = Geneid, Chr, Start, End, Strand, Length)
+peak.annote <- raw_counts |>
+  select(PeakNo = Geneid, Chr, Start, End, Strand, Length)
 
-# Remove excluded samples
+# Remove excluded samples from manifest
 manifest <- manifest |> filter(!grepl("^EXC", Group))
 
-# Create count matrix
-d <- dd |>
+# Create count matrix for edgeR
+count_matrix <- raw_counts |>
   select(PeakNo = Geneid, matches(".bam$")) |>
   data.frame(check.names = FALSE) |>
   column_to_rownames("PeakNo")
 
-colnames(d) <- fix_sample_names(colnames(d))
+colnames(count_matrix) <- fix_sample_names(colnames(count_matrix))
 
-# Validate count matrix columns match manifest
-if (!all(colnames(d) %in% manifest$MapID)) {
-  cat("\nERROR in creation of count matrix 'd'\n")
-  cat("LINE-141\n\n")
-  rlang::abort("ERROR")
+# Remove columns not in manifest (NA values from failed sample name mapping)
+count_matrix <- count_matrix[, !is.na(colnames(count_matrix))]
+
+# Validate all count matrix columns are in manifest
+if (!all(colnames(count_matrix) %in% manifest$SampleID)) {
+  cat("\nERROR: Count matrix columns don't match manifest SampleIDs\n")
+  cat("Check sample naming conventions and manifest file\n\n")
+  rlang::abort("Count matrix validation failed")
 }
 
-# Prepare count matrix for edgeR analysis
-d <- d[, manifest$SampleID]
+# Prepare edgeR DGEList object
+count_matrix <- count_matrix[, manifest$SampleID]
 group <- factor(manifest$Group)
-y <- DGEList(counts = d, group = group)
-keep <- filterByExpr(y)
-y <- y[keep, , keep.lib.sizes = FALSE]
-y <- calcNormFactors(y)
+dge <- DGEList(counts = count_matrix, group = group)
+keep <- filterByExpr(dge)
+dge <- dge[keep, , keep.lib.sizes = FALSE]
+dge <- calcNormFactors(dge)
 
 # Perform PCA for quality control
-pr <- prcomp(cpm(y, log = TRUE), scale = FALSE)
-dp <- pr$rotation |>
+pca_result <- prcomp(cpm(dge, log = TRUE), scale = FALSE)
+pca_data <- pca_result$rotation |>
   data.frame() |>
   rownames_to_column("SampleID") |>
   left_join(manifest, by = "SampleID")
 
-# Define color palette
-colors1 <- c(pal_uchicago("default")(9), pals::cols25())
+# Define color palette for plots
+plot_colors <- c(pal_uchicago("default")(9), pals::cols25())
 
-# Create PCA plots
-pp1 <- ggplot(dp, aes(PC1, PC2, color = Group, label = SampleID)) +
+# PCA plot without labels
+pca_plot <- ggplot(pca_data, aes(PC1, PC2, color = Group, label = SampleID)) +
   theme_light(base_size = 16) +
   geom_point(size = 4, alpha = 0.6) +
-  scale_color_manual(values = colors1)
+  scale_color_manual(values = plot_colors)
 
-pp2 <- ggplot(dp, aes(PC1, PC2, color = Group, label = SampleID)) +
+# PCA plot with sample labels
+pca_plot_labeled <- ggplot(pca_data,
+                           aes(PC1, PC2, color = Group, label = SampleID)) +
   theme_light(base_size = 16) +
   geom_point(size = 2) +
-  scale_color_manual(values = colors1) +
+  scale_color_manual(values = plot_colors) +
   geom_label_repel(
     color = "black",
     max.overlaps = Inf,
@@ -258,73 +285,83 @@ pp2 <- ggplot(dp, aes(PC1, PC2, color = Group, label = SampleID)) +
 
 # Set up design matrix and estimate dispersion
 design <- model.matrix(~0 + group)
-y <- estimateDisp(y, design)
+dge <- estimateDisp(dge, design)
 
 #' Perform differential peak analysis using edgeR LRT
 #'
-#' @param y DGEList object containing counts
-#' @param design Design matrix
-#' @param contrast Contrast vector
+#' Subsets DGE object to comparison groups, re-filters peaks, performs
+#' likelihood ratio test, and annotates significant peaks.
+#'
+#' @param dge_object DGEList object containing normalized counts
+#' @param design Design matrix from full dataset
+#' @param contrast Contrast vector defining comparison
 #' @param fdr_cut FDR cutoff for significance (default: 0.05)
-#' @return List containing results table, comparison name, and plots
-do_qlf_stats <- function(y, design, contrast, fdr_cut = 0.05) {
+#' @return List with results table, comparison name, MA plot, and volcano plot
+do_differential_analysis <- function(dge_object, design, contrast,
+                                     fdr_cut = 0.05) {
 
-  cat("Num peaks =", nrow(y), "\n")
-  cat("\nRefilter peaks to just those in comp\n\n")
+  cat("Num peaks =", nrow(dge_object), "\n")
+  cat("\nRefiltering peaks for this comparison\n\n")
 
   # Extract samples involved in this comparison
-  comp_samps <- which(rowSums(design[, contrast != 0]) > 0) |> unname()
+  comp_sample_idx <- which(rowSums(design[, contrast != 0]) > 0) |> unname()
 
-  # Subset data to comparison samples and re-filter
-  g_comp <- factor(group[comp_samps])
-  y_comp <- getCounts(y)[, comp_samps]
-  design_comp <- model.matrix(~0 + g_comp)
+  # Subset and re-filter data for comparison-specific analysis
+  comp_group <- factor(group[comp_sample_idx])
+  comp_counts <- getCounts(dge_object)[, comp_sample_idx]
+  comp_design <- model.matrix(~0 + comp_group)
 
-  y_comp <- DGEList(counts = y_comp, group = g_comp)
-  keep <- filterByExpr(y_comp, design = design_comp)
-  y_comp <- y_comp[keep, , keep.lib.sizes = FALSE]
-  y_comp <- calcNormFactors(y_comp)
-  y_comp <- estimateDisp(y_comp, design_comp)
+  dge_comp <- DGEList(counts = comp_counts, group = comp_group)
+  keep <- filterByExpr(dge_comp, design = comp_design)
+  dge_comp <- dge_comp[keep, , keep.lib.sizes = FALSE]
+  dge_comp <- calcNormFactors(dge_comp)
+  dge_comp <- estimateDisp(dge_comp, comp_design)
 
   # Perform likelihood ratio test
-  contrast_comp <- contrast[contrast != 0]
-  fit <- glmFit(y_comp, design_comp)
-  lrt <- glmLRT(fit, contrast = contrast_comp)
+  comp_contrast <- contrast[contrast != 0]
+  fit <- glmFit(dge_comp, comp_design)
+  lrt <- glmLRT(fit, contrast = comp_contrast)
   model <- lrt
 
-  # Create comparison tag
-  cp <- model$comparison
-  comp_tag <- paste0(sort(strsplit(cp, " ")[[1]], decreasing = TRUE), collapse = "") %>%
-    gsub("-1\\*", "-", .) %>%
-    gsub("^1\\*", "", .) %>%
-    gsub("gComp", "", .)
+  # Create comparison tag for labeling
+  comparison_string <- model$comparison
+  comp_tag <- paste0(sort(strsplit(comparison_string, " ")[[1]],
+                          decreasing = TRUE), collapse = "") |>
+    gsub("-1\\*", "-", x = _) |>
+    gsub("^1\\*", "", x = _) |>
+    gsub("gComp", "", x = _)
 
-  # Process results table
-  tt <- model$table |>
+  # Extract and process results table
+  results_table <- model$table |>
     data.frame() |>
     rownames_to_column("PeakNo") |>
     tibble() |>
     mutate(FDR = p.adjust(PValue)) |>
     arrange(FDR, PValue) |>
-    mutate(PValue.mod = ifelse(PValue < .Machine$double.eps^2, .Machine$double.eps^2, PValue))
+    mutate(PValue.mod = ifelse(PValue < .Machine$double.eps^2,
+                                .Machine$double.eps^2, PValue))
 
-  # Apply IHW (Independent Hypothesis Weighting) for multiple testing correction
+  # Apply IHW (Independent Hypothesis Weighting) for multiple testing
   library(IHW)
-  ihw_res <- ihw(PValue ~ Length, dat = tt |> left_join(peak.annote, by = "PeakNo"), alpha = 0.25)
-  cat("ihw rejections =", rejections(ihw_res), "\n")
+  ihw_result <- ihw(PValue ~ Length,
+                    dat = results_table |> left_join(peak.annote, by = "PeakNo"),
+                    alpha = 0.25)
+  cat("IHW rejections =", rejections(ihw_result), "\n")
 
   # Create MA plot
-  max_logfc <- max(abs(tt$logFC))
+  max_logfc <- max(abs(results_table$logFC))
 
-  p_ma <- ggplot(arrange(tt, desc(PValue)), aes(logCPM, logFC, color = FDR < fdr_cut)) +
+  ma_plot <- ggplot(arrange(results_table, desc(PValue)),
+                    aes(logCPM, logFC, color = FDR < fdr_cut)) +
     theme_light(base_size = 16) +
     rasterize(geom_point()) +
     scale_color_manual(values = c("#7f7f7f33", "#e31a1c")) +
     ggtitle(comp_tag) +
     scale_y_continuous(limits = c(-1, 1) * max_logfc)
 
-  # Create volcano plot (PValue.mod is clipped to make plot readable)
-  p_vc <- ggplot(arrange(tt, desc(PValue)), aes(logFC, PValue.mod, color = FDR < fdr_cut)) +
+  # Create volcano plot (PValue.mod clipped for readability)
+  volcano_plot <- ggplot(arrange(results_table, desc(PValue)),
+                         aes(logFC, PValue.mod, color = FDR < fdr_cut)) +
     theme_light(base_size = 16) +
     rasterize(geom_point()) +
     scale_y_continuous(trans = reverselog_trans(10)) +
@@ -332,94 +369,116 @@ do_qlf_stats <- function(y, design, contrast, fdr_cut = 0.05) {
     scale_color_manual(values = c("#7f7f7f33", "#e31a1c")) +
     ggtitle(comp_tag)
 
-  # Filter for significant peaks
-  ans <- tt |>
+  # Filter for significant peaks (exclude mitochondrial)
+  sig_results <- results_table |>
     filter(FDR < fdr_cut) |>
     left_join(peak.annote, by = "PeakNo") |>
     select(-matches("^F$|^LR")) |>
     filter(Chr != "MT")
 
-  # Prepare significant peaks for annotation
-  sig_peaks <- ans |>
+  # Prepare significant peaks for ChIPseeker annotation
+  sig_peaks_bed <- sig_results |>
     select(V1 = Chr, V2 = Start, V3 = End, V4 = PeakNo, V5 = PValue) |>
     mutate(V5 = -10 * log10(V5))
 
-  # Annotate significant peaks with gene information
-  if (nrow(ans) > 0) {
-    # Add "chr" prefix if missing
-    if (substr(ans$Chr[1], 1, 3) != "chr") {
-      sig_peaks <- sig_peaks |> mutate(V1 = paste0("chr", V1)) |> data.frame()
+  # Annotate significant peaks with nearest genes
+  if (nrow(sig_results) > 0) {
+    # Add "chr" prefix if missing (genome-dependent)
+    if (substr(sig_results$Chr[1], 1, 3) != "chr") {
+      sig_peaks_bed <- sig_peaks_bed |>
+        mutate(V1 = paste0("chr", V1)) |>
+        data.frame()
     } else {
-      sig_peaks <- sig_peaks |> data.frame()
+      sig_peaks_bed <- sig_peaks_bed |> data.frame()
     }
 
-    # Convert to GRanges and annotate
-    sig_peaks <- ChIPseeker:::peakDF2GRanges(sig_peaks)
-    aa <- annotatePeak(sig_peaks, TxDb = txdb, tssRegion = c(-5000, 5000), annoDb = annoDb)
+    # Convert to GRanges and annotate with TSS regions
+    sig_peaks_granges <- ChIPseeker:::peakDF2GRanges(sig_peaks_bed)
+    peak_annotations <- annotatePeak(sig_peaks_granges,
+                                     TxDb = txdb,
+                                     tssRegion = c(-5000, 5000),
+                                     annoDb = annoDb)
 
-    # Extract gene annotations
-    peak_annote_genes <- as.data.frame(aa) |>
+    # Extract gene information
+    gene_info <- as.data.frame(peak_annotations) |>
       tibble() |>
       dplyr::select(PeakNo = V4, SYMBOL, GENENAME, annotation, distanceToTSS)
 
-    tbl <- ans |> left_join(peak_annote_genes, by = "PeakNo")
+    final_table <- sig_results |> left_join(gene_info, by = "PeakNo")
   } else {
-    cat("\n   No significant peaks", comp_tag, "at FDR", fdr_cut, "\n\n")
-    tbl <- ans
+    cat("\n   No significant peaks for", comp_tag, "at FDR", fdr_cut, "\n\n")
+    final_table <- sig_results
   }
 
-  list(tbl = tbl, comparison = comp_tag, p.ma = p_ma, p.vc = p_vc, model = model)
+  list(
+    tbl = final_table,
+    comparison = comp_tag,
+    p.ma = ma_plot,
+    p.vc = volcano_plot,
+    model = model
+  )
 }
 
-# Extract project number from working directory
-cwd <- strsplit(getwd(), "/")[[1]]
-proj_no <- grep("^Proj_|^B-\\d+", cwd, value = TRUE)
+# Extract project number from working directory for output naming
+working_dir_parts <- strsplit(getwd(), "/")[[1]]
+project_id <- grep("^Proj_|^B-\\d+", working_dir_parts, value = TRUE)
 
-# Process comparisons
-g_names <- gsub("group", "", colnames(design))
-comps <- read_csv(COMPARISON_FILE, col_names = FALSE)
+# Load comparisons file and extract group names from design matrix
+group_names <- gsub("group", "", colnames(design))
+comparisons <- read_csv(COMPARISON_FILE, col_names = FALSE)
 
-res <- list()
+# Run differential analysis for each comparison
+results_list <- list()
 
-for (ci in transpose(comps)) {
-  contrast <- as.numeric(g_names == ci$X2) - as.numeric(g_names == ci$X1)
+for (comparison_pair in transpose(comparisons)) {
+  # Create contrast vector: Group2 - Group1
+  contrast <- as.numeric(group_names == comparison_pair$X2) -
+              as.numeric(group_names == comparison_pair$X1)
+
   cat("========================================================\n")
-  cat(str(ci))
+  cat(str(comparison_pair))
 
-  # Validate contrast
+  # Validate contrast is valid (must have exactly 2 groups)
   if (!(sum(contrast != 0) > 0 & sum(contrast) == 0)) {
-    cat("\n\n")
-    cat("   Invalid contrasts")
-    cat("\n\n")
-    stop("FATAL")
+    cat("\nERROR: Invalid contrast specification\n")
+    cat("Check comparison file format\n\n")
+    stop("Invalid contrast")
   }
 
-  res[[len(res) + 1]] <- do_qlf_stats(y, design, contrast)
+  results_list[[len(results_list) + 1]] <-
+    do_differential_analysis(dge, design, contrast)
 }
 cat("========================================================\n")
 cat("========================================================\n\n")
 
-# Compile results and summary statistics
-tbls <- map(res, "tbl")
-names(tbls) <- map(res, "comparison") |> unlist() |> substr(1, 31)
-stats <- map(tbls, nrow) |> bind_rows() |> gather(Comparison, NumSig)
+# Compile results tables with comparison names
+result_tables <- map(results_list, "tbl")
+names(result_tables) <- map(results_list, "comparison") |>
+  unlist() |>
+  substr(1, 31)
+
+# Create summary statistics
+summary_stats <- map(result_tables, nrow) |>
+  bind_rows() |>
+  gather(Comparison, NumSig)
 
 # Write results to Excel file
+output_xlsx <- cc(project_id, RUNTAG, "DiffPeaksEdgeR_V3.xlsx")
 write.xlsx(
-  c(list(Summary = stats), tbls),
-  cc(proj_no, RUNTAG, "DiffPeaksEdgeR_V3.xlsx")
+  c(list(Summary = summary_stats), result_tables),
+  output_xlsx
 )
 
-# Generate PDF output with all plots
-pfile <- cc(proj_no, RUNTAG, "DiffPeaks_V3.pdf")
-pdf(pfile, width = 11, height = 8.5)
+# Generate PDF with PCA and differential analysis plots
+output_pdf <- cc(project_id, RUNTAG, "DiffPeaks_V3.pdf")
+pdf(output_pdf, width = 11, height = 8.5)
 
-print(pp1)
-print(pp2)
-for (ii in seq(len(res))) {
-  print(res[[ii]]$p.ma)
-  print(res[[ii]]$p.vc)
+print(pca_plot)
+print(pca_plot_labeled)
+
+for (i in seq(len(results_list))) {
+  print(results_list[[i]]$p.ma)
+  print(results_list[[i]]$p.vc)
 }
+
 dev.off()
-
-
