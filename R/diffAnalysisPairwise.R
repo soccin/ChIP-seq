@@ -174,7 +174,7 @@ y <- estimateDisp(y,design)
 # qlf <- glmQLFTest(fit,coef=2)
 # topTags(qlf)
 
-doQLFStats<-function(y,design,contrast,fdrCut=1.1) {
+doQLFStats<-function(y,design,contrast,fdrCut=0.05) {
 
     #fit <- glmQLFit(y,design)
     #qlf <- glmQLFTest(fit,contrast=contrast)
@@ -301,7 +301,7 @@ tbls=map(res,"tbl")
 names(tbls)=map(res,"comparison") %>% unlist %>% substr(.,1,31)
 stats=map(tbls,nrow) %>% bind_rows %>% gather(Comparison,NumSig)
 
-write.xlsx(c(list(Summary=stats),tbls),cc(projNo,RUNTAG,"DiffPeaksEdgeRv2_NoFilt.xlsx"))
+write.xlsx(c(list(Summary=stats),tbls),cc(projNo,RUNTAG,"DiffPeaksEdgeRv2.xlsx"))
 
 # pfile=cc(projNo,RUNTAG,"DiffPeaksV2_%02d.png")
 # pngCairo(pfile,width=11,height=8.5)
