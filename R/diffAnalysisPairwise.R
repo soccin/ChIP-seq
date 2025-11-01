@@ -1,34 +1,63 @@
 args <- commandArgs(trailing = TRUE)
 if (len(args) < 3) {
   cat("
-    Usage: analyzeATAC.R GENOME SampleManifest.csv Comparisons.csv [RUNTAG]
+================================================================================
+  Pairwise Differential ChIP-seq Peak Analysis using edgeR
+================================================================================
 
-        Comparisons.csv (NO Column names)
+USAGE:
+  Rscript diffAnalysisPairwise.R GENOME MANIFEST COMPARISONS [RUNTAG]
 
-            aNSC_loxp15,aNSC_p53
+REQUIRED ARGUMENTS:
+  GENOME        Genome assembly: 'human' or 'mouse'
+  MANIFEST      Sample manifest CSV file (with header row)
+  COMPARISONS   Comparison pairs CSV file (NO header row)
 
-            Sign convention X2-X1; e.g., aNSC_p53-aNSC_loxp15
+OPTIONAL ARGUMENTS:
+  RUNTAG        Tag to append to output filenames (default: none)
 
+OUTPUT FILES:
+  - DiffPeaksEdgeR_V3.xlsx : Excel file with differential peaks
+  - DiffPeaks_V3.pdf       : PDF with PCA and MA/volcano plots
+
+--------------------------------------------------------------------------------
+MANIFEST FILE FORMAT (with header):
+  Three columns: MapID, SampleID, Group
+
+  Example:
+    MapID,SampleID,Group
+    761-wt,761-wt,wt
+    810-wt,810-wt,wt
+    876-ko,876-ko,ko
+    978-ko,978-ko,ko
+
+  See example: R/sampleManifest.csv
+
+--------------------------------------------------------------------------------
+COMPARISONS FILE FORMAT (NO header):
+  Two columns: Group1, Group2
+  Each row defines one pairwise comparison
+
+  Example:
+    wt,ko
+
+  This compares Group2 vs Group1 (ko vs wt)
+  Sign convention: Group2 - Group1
+  Positive logFC means higher in Group2 (ko)
+  Negative logFC means higher in Group1 (wt)
+
+  See example: R/comparisions.csv
+
+--------------------------------------------------------------------------------
+EXAMPLE USAGE:
+  Rscript diffAnalysisPairwise.R mouse R/sampleManifest.csv R/comparisions.csv
+  Rscript diffAnalysisPairwise.R mouse manifest.csv comps.csv run1
+
+================================================================================
 
 ")
   quit()
 }
-
-#
-# Example inputs:
-#   SampleManifest.csv
-#
-#        SampleID,Group,MapID
-#        aNSC_loxp15_1,aNSC_loxp15,s_aNSC_loxp15_1
-#        aNSC_loxp15_2,aNSC_loxp15,s_aNSC_loxp15_2
-#        aNSC_p53_1,aNSC_p53,s_aNSC_p53_1
-#
-#   Comparisons.csv
-#
-#        aNSC_loxp15,aNSC_p53
-#
-#   Sign convention X2-X1; e.g., aNSC_p53-aNSC_loxp15
-#
 
 #' Fix sample names based on naming convention
 #'
