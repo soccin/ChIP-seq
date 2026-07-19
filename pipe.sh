@@ -47,7 +47,10 @@ function usage {
 
 	  -n|--narrow-peaks        Call narrow peaks. Default is broad peaks.
 
-	  -o|--outdir <DIR>        Output directory. Default is "out".
+	  -o|--outdir <DIR>        Output directory. Default is "out". N.B. the
+	                           post-pipeline QC and differential scripts
+	                           currently hardcode "out", so changing this
+	                           breaks postPipe.sh.
 
 	  --proper-pair-off        Keep reads that are not in a proper pair. Use for
 	                           samples where translocations are important.
