@@ -52,6 +52,6 @@ You can access them on the BIC server at:
 
 	https://bicdelivery.mskcc.org/project/$PROJNO/chipseq/r_001
 
-<<COPY_PASTE ChIPSeq/docs/RESULTS.md>>
+<<COPY_PASTE ChIP-seq/docs/output.md>>
 
 EOF
