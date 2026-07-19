@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-19
+
+### Added
+- Warning when pipe.sh is run without --pairing-file, stating up front that
+  MACS peak calling will not run and the pipeline stops after Stage2
+- CLAUDE.md with pipeline architecture and working-directory conventions
+
+### Removed
+- docs/RESULTS_wDiff.md and its rendered PDF, consolidated into docs/output.md.
+  The two were near-duplicate results descriptions that had drifted apart
+
+### Changed
+- docs/output.md is now the single results description, following the nf-core
+  convention, and gained the differential analysis section from RESULTS_wDiff.md
+- Rewrote pipe.sh usage text: per-option descriptions with defaults, pairing
+  file format (including the 'na' target-only form), and an example command
+- Stage3 message when no pairing file is given now states that MACS is
+  skipped, replacing the misleading "not yet implemented" wording
+
+### Fixed
+- Corrected MACS arguments in docs/output.md to match callPeaks_ChIPseq.sh:
+  cutoff is `-p 0.01` not `-q 0.01`, and `--broad-cutoff` is never passed.
+  Documented `--nomodel --shift 0 --extsize` and clarified that peak type is
+  chosen once per run rather than per sample
+- Corrected post-processing MAPQ filter in docs/output.md from 10 to 30
+- Updated stale setup references from CMD.INSTALL.MACS/CMDS.INSTALL.MACS to
+  00.SETUP.cmds in pipe.sh and docs/install.md
+- Delivery email template in deliverResults.sh referenced a nonexistent
+  docs/RESULTS.md under a misspelled directory; now points to ChIP-seq/docs/output.md
+- Unified version references across README.md, VERSION.md, docs/output.md,
+  and getPackageVersions.R, which had drifted to 0.8.0 and 0.7.x
+
 ## [0.8.0] - 2025-11-01
 
 ### Added
@@ -61,7 +93,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 - Add featureCounts installation information in docs
 
-[Unreleased]: https://github.com/soccin/ChIP-seq/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/soccin/ChIP-seq/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/soccin/ChIP-seq/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/soccin/ChIP-seq/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/soccin/ChIP-seq/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/soccin/ChIP-seq/compare/v0.7.0...v0.7.1

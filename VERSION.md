@@ -1,7 +1,7 @@
 # Version Information
 
-Version: 0.8.0
-Date: 2025-11-01
+Version: 0.9.0
+Date: 2026-07-19
 
 ## Python (venv)
 Python==3.10.2
