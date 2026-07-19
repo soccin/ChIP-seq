@@ -2,7 +2,7 @@
 
 ## MACS2
 
-See CMDS.INSTALL.MACS for info
+See 00.SETUP.cmds for info. Must be sourced not run.
 
 ## FeatureCounts
 
