@@ -13,7 +13,7 @@ ORIG_CMD=$*
 if [ ! -e "$SDIR/venv" ]; then
     echo
     echo "   Need to install macs2"
-    echo "   Info in CMD.INSTALL.MACS"
+    echo "   Info in 00.SETUP.cmds"
     echo
     exit 1
 fi
@@ -35,11 +35,48 @@ TAG=q$PIPENAME
 COMMAND_LINE=$*
 
 function usage {
-    echo
-    echo "usage: $PIPENAME/pipe.sh [-n|--narrow-peaks] [-o|--outdir <DIR>] [--proper-pair-off] [-s|--single-end-on] --pairing-file <PAIRS> BAM1 [BAM2 ... BAMN]"
-    echo "version=$SCRIPT_VERSION"
-    echo ""
-    echo
+    cat <<-END_USAGE
+
+	usage: $PIPENAME/pipe.sh [OPTIONS] --pairing-file <PAIRS> BAM1 [BAM2 ... BAMN]
+	version=$SCRIPT_VERSION
+
+	Options:
+
+	  --pairing-file <PAIRS>   Tab/space delimited file of CONTROL/TARGET sample
+	                           pairs. Required for peak calling (MACS); see below.
+
+	  -n|--narrow-peaks        Call narrow peaks. Default is broad peaks.
+
+	  -o|--outdir <DIR>        Output directory. Default is "out".
+
+	  --proper-pair-off        Keep reads that are not in a proper pair. Use for
+	                           samples where translocations are important.
+
+	  -s|--single-end-on       Input BAMs are single-end.
+
+	Pairing file:
+
+	  Two columns, control in col-1 and target in col-2, one pair per line:
+
+	      CTRL_1  TRGT_1
+	      CTRL_2  TRGT_2
+
+	  For target-only samples (no control) put 'na' in col-1:
+
+	      na      TRGT_1
+	      na      TRGT_2
+
+	  WITHOUT --pairing-file the pipeline stops after the BAM post-processing
+	  and bigWig stages; MACS peak calling and all downstream stages will NOT
+	  be run.
+
+	Example:
+
+	  bsub -o LSF.CTRL/ ./$PIPENAME/pipe.sh \\
+	      --pairing-file results/Proj_10706_B_sample_pairing.txt \\
+	      results/alignments/Proj_10706_B_s_*bam
+
+	END_USAGE
     exit
 }
 
@@ -88,6 +125,25 @@ while :; do
     esac
     shift
 done
+
+if [ "$PAIRS" == "" ]; then
+    cat <<-END_WARNING
+
+	#######################################################################
+
+	  WARNING: no --pairing-file given
+
+	  MACS peak calling will NOT be run. The pipeline will stop after
+	  Stage2 (BAM post-processing and bigWig files); Stages 3-6 (peak
+	  calling, peak merging, counts, scale factors) will be skipped.
+
+	  To call peaks, rerun with --pairing-file <PAIRS>. For target-only
+	  samples put 'na' in col-1 of the pairing file.
+
+	#######################################################################
+
+	END_WARNING
+fi
 
 echo PROPER_PAIR=$PROPER_PAIR
 echo SE=$SE
@@ -162,7 +218,8 @@ echo -e "Starting Stage3 - Peak Calling (MACS) \n\n"
 
 if [ "$PAIRS" == "" ]; then
     echo
-    echo "Unpaired peak calling not yet implemented"
+    echo "No --pairing-file given; skipping MACS peak calling"
+    echo "Stopping here. Stages 3-6 will not be run"
     echo "To run unpaired samples put 'na' in col 1"
     echo "of pairing file"
     echo
