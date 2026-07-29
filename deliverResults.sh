@@ -12,11 +12,6 @@ fi
 
 set -eu
 
-echo ""
-echo "Need sudo to chmod output folder"
-echo ""
-
-sudo chmod g+ws $RESDIR
 mkdir -p $RESDIR/chipSeq/macs
 mkdir -p $RESDIR/chipSeq/bw
 mkdir -p $RESDIR/chipSeq/qc
