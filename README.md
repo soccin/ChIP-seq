@@ -1,5 +1,13 @@
 # ChIP-Seq pipeline
 
+## STATUS: ON HOLD. DO NOT USE THIS PIPELINE.
+
+The port to IRIS/Slurm (v1.0.0) is not finished. `pipe.sh` is disabled:
+it prints a message and exits with status 1. Do not fall back to v0.9.0
+or earlier either: from v0.7.0 their count matrix holds reads, not
+fragments (`CHANGELOG.md`), and they ran on JUNO/LSF. What remains before
+the release is in `00.SPEC_v1.0.0.md`.
+
 ## Version 0.9.0
 
 IRIS / Slurm only (JUNO/LSF support was removed). See `CHANGELOG.md` for

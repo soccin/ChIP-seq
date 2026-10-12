@@ -70,3 +70,9 @@ sample, including a control, is fatal (spec D15).
 **#8 Version has no single source of truth** (partly) — `pipe.sh`
 records `git describe --long --tags --dirty`. The five hand-edited
 places remain (`00.ISSUES.md` #13).
+
+**#9 Doc rendering is not reproducible** (was `00.ISSUES.md` #11) —
+`docs/Makefile` renders `docs/output.md` to `output.html` and
+`output.pdf` on IRIS (`make -C ChIP-seq/docs`): pandoc 3.6.4 from
+`~/bin`, PDF through the system xelatex, since lualatex (TeX Live 2018)
+fails in microtype.

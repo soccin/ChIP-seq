@@ -55,6 +55,11 @@ assume it (`00.ISSUES.md` #4).
 
 ## Running
 
+On hold since 2026-10-12: `pipe.sh` exits 1 at once with a "do NOT use
+this pipeline" message (block marked `ON HOLD` after the `#SBATCH`
+lines). To test or resume, delete that block on a branch first; see
+`00.SPEC_v1.0.0.md` section 0.
+
 ```bash
 sbatch ./ChIP-seq/pipe.sh --pairing-file PAIRS BAM1 [BAM2 ...]
 ./ChIP-seq/bin/checkRun.sh          # 0 ok, 1 failed, 2 running, 3 unknown
@@ -188,6 +193,9 @@ exist:
    the reads, BAM headers against the genome file).
 5. Counts are never accepted unchecked (Checks A and B); `COMPLETED`
    requires every deliverable; `postPipe.sh` needs `checkRun.sh` to pass.
+   No Bioconductor package (Rsubread, `GenomicAlignments`, ...) in a
+   pipeline step that produces counts: their APIs change without warning.
+   The standalone subread binary is not Bioconductor.
 6. No dependence on personal configuration.
 7. Every run records what it used.
 
@@ -208,8 +216,9 @@ exist:
   `VERSION.md`, `CHANGELOG.md` (entry and compare links), `docs/output.md`
   and the `cat()` banner in `getPackageVersions.R`. `pipe.sh` reports
   `git describe`, so the tag must be pushed.
-- `docs/output.html` and `.pdf` are rendered from `docs/output.md` and must
-  be regenerated when it changes (`00.ISSUES.md` #11).
+- `docs/output.html` and `.pdf` are rendered from `docs/output.md` with
+  `make -C ChIP-seq/docs` (pandoc, xelatex) and must be regenerated when it
+  changes.
 - Superseded scripts go to `attic/` rather than being deleted. Open issues
   in `00.ISSUES.md`, closed ones in `attic/zzISSUES.md`.
 - Shell: `set -e -o pipefail` (and `-u` where safe), `SDIR` self-location,
