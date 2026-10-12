@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 To be released as 1.0.0 once the full-size validation in
 `00.SPEC_v1.0.0.md` passes. Breaking: Slurm only, counts change, names change.
 
+On hold since 2026-10-12: `pipe.sh` is disabled (prints a message and
+exits 1) until that validation is done.
+
 ### Breaking
 - IRIS/Slurm only. Submit with `sbatch ChIP-seq/pipe.sh`; LSF support
   removed. Logs in `SLURM.*/`. One run per analysis directory.

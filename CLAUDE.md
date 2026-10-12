@@ -55,6 +55,11 @@ assume it (`00.ISSUES.md` #4).
 
 ## Running
 
+On hold since 2026-10-12: `pipe.sh` exits 1 at once with a "do NOT use
+this pipeline" message (block marked `ON HOLD` after the `#SBATCH`
+lines). To test or resume, delete that block on a branch first; see
+`00.SPEC_v1.0.0.md` section 0.
+
 ```bash
 sbatch ./ChIP-seq/pipe.sh --pairing-file PAIRS BAM1 [BAM2 ...]
 ./ChIP-seq/bin/checkRun.sh          # 0 ok, 1 failed, 2 running, 3 unknown
