@@ -188,6 +188,9 @@ exist:
    the reads, BAM headers against the genome file).
 5. Counts are never accepted unchecked (Checks A and B); `COMPLETED`
    requires every deliverable; `postPipe.sh` needs `checkRun.sh` to pass.
+   No Bioconductor package (Rsubread, `GenomicAlignments`, ...) in a
+   pipeline step that produces counts: their APIs change without warning.
+   The standalone subread binary is not Bioconductor.
 6. No dependence on personal configuration.
 7. Every run records what it used.
 
