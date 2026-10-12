@@ -151,11 +151,20 @@ Species words and stand-in names are errors.
   `bin/genomeInfo.sh TAG FIELD`, R with `genomeInfo()` in `tools.R`; both
   fail on an unknown tag or field. No stage script names a genome.
 - `lib/genomes/<TAG>.genome` lists autosomes, X and Y only. It is the POST
-  region set and the chromosome sizes.
+  region set and the chromosome sizes. For `samtools view -L` write the
+  3-column BED (`contig 0 length`) first, as the POST scripts do: samtools
+  reads the 2-column file as `contig position` and selects one base per
+  line. Mitochondrial reads are dropped before peak calling, unlike
+  ENCODE's ChIP pipeline (`00.ISSUES.md` #14).
 - Nobody types the genome of a run: `pipe.sh` detects it and records it;
   post-run tools read `GENOME=` from `00.RUNSTATUS.txt`.
 - `bin/getGenomeBuildBAM.sh` knows more builds than are supported, so that
-  unsupported ones get a named error. Keep it identical to ATAC-seq's.
+  unsupported ones get a named error. ATAC-seq copied it (branch
+  `fix/genome-tags`); keep the two byte-identical.
+- `bin/genomeInfo.sh` and `GENOMES.tsv` differ from ATAC-seq's: here the
+  table has `HOMER` and the script has `--tags` and the `GENOME_FILE`
+  field; ATAC's table adds `MITO`. Shared columns have the same names and
+  values.
 - b37 is supported but untested on IRIS (`00.ISSUES.md` #1).
 
 Adding a build: a row in `GENOMES.tsv`, `lib/genomes/<TAG>.genome`
@@ -186,14 +195,14 @@ exist:
 
 - Shared with ATAC-seq: `bin/slurmTools.sh`, `bin/runStage.sh`,
   `bin/loadTools.sh`, `bin/checkRun.sh`, `bin/countPeaks.sh`,
-  `bin/checkCounts.sh`, `bin/assignedCheck.sh`, `bin/getGenomeBuildBAM.sh`
-  were copied from ATAC-seq `devs` 28978c9 with `ATAC` renamed `CHIP`.
-  Local changes: `loadTools.sh` is safe under `set -u`; `countPeaks.sh` and
-  `checkCounts.sh` take `--single-end`, and `countPeaks.sh` puts the first
-  failing sample into its FATAL line (so `MESSAGE` names it); `checkCounts.sh` finds BAMs moved
-  to `out/bam/`; `getGenomeBuildBAM.sh` prints `hg38`, adds `mm10+b37` and
-  `hg38+mm39`, and fails on an unreadable header. Diff again when ATAC
-  releases v2.0.0 and offer these back.
+  `bin/checkCounts.sh`, `bin/assignedCheck.sh` were copied from ATAC-seq
+  `devs` 28978c9 with `ATAC` renamed `CHIP`. Local changes: `loadTools.sh`
+  is safe under `set -u`; `countPeaks.sh` and `checkCounts.sh` take
+  `--single-end`, and `countPeaks.sh` puts the first failing sample into
+  its FATAL line (so `MESSAGE` names it); `checkCounts.sh` finds BAMs
+  moved to `out/bam/`. Diff again when ATAC releases v2.0.0 and offer
+  these back. `bin/getGenomeBuildBAM.sh` went the other way: ATAC-seq
+  took this repo's copy.
 - `bin/picardJvm.sh` is PEMapper's (v_4.1.0) with `PEMAP_` renamed `CHIP_`.
 - Version lives in five places that must move together: `README.md`,
   `VERSION.md`, `CHANGELOG.md` (entry and compare links), `docs/output.md`
