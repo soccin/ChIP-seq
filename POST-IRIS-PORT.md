@@ -1,6 +1,6 @@
 # Porting `deliverResults.sh` to IRIS
 
-Work to do after v1.0.0. Decision D6 in `00.SPEC_v1.0.0.md` left delivery
+Work to do after v1.0.0. Decision D6 in `attic/00.SPEC_v1.0.0.md` left delivery
 out of the port. The model is adagio v3.2.2 (`bin/deliver.sh`,
 `bin/readme2yaml.R`, `assets/delivery_email_template.txt` in
 `/data1/core001/work/bic/socci/Users/RomesseP/BlattmS1/Proj_16083_I/adagio`),

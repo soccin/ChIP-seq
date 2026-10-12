@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-To be released as 1.0.0 once the validation in `00.SPEC_v1.0.0.md`
-section 6 passes. Breaking: Slurm only, counts change, names change.
+To be released as 1.0.0 once the full-size validation in
+`00.SPEC_v1.0.0.md` passes. Breaking: Slurm only, counts change, names change.
 
 ### Breaking
 - IRIS/Slurm only. Submit with `sbatch ChIP-seq/pipe.sh`; LSF support

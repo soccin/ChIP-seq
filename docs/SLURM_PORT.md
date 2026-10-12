@@ -1,7 +1,7 @@
 # Porting the ChIP-seq pipeline from JUNO/LSF to IRIS/Slurm
 
 Done 2026-10-11 on `feat/iris-port`, for v1.0.0. The design and its
-decisions (D1 to D20) are in `00.SPEC_v1.0.0.md`. The model is the
+decisions (D1 to D20) are in `attic/00.SPEC_v1.0.0.md`. The model is the
 ATAC-seq port (`../ATAC-seq/docs/SLURM_PORT.md`, v1.5.1 plus `devs`
 28978c9): this pipeline had the same shape (a synchronous control job,
 `xargs -n N bsub`, `bSync`), so the ATAC code transferred almost line for
@@ -87,7 +87,7 @@ grep -L "#CHIP_EXIT=0" SLURM.0*/*.out
 ## Validation
 
 Done 2026-10-11 on `feat/iris-port` (uncommitted, so the runs report
-`v0.9.0-1-ge3d7535-dirty`), against `00.SPEC_v1.0.0.md` section 6. Test
+`v0.9.0-1-ge3d7535-dirty`), against `attic/00.SPEC_v1.0.0.md` section 6. Test
 directories, inputs and scripts are in `PortATACseq/PortChIPseq/`. The
 downsampled set is the 8 Proj_16852 mm10 Cut&Run BAMs at 1/20
 (`Ports/PEMapper/bin/downsampleBam.sh -s 20`, 0.23 to 0.35 GB each) in
