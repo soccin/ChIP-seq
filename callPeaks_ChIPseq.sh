@@ -1,17 +1,35 @@
 #!/bin/bash
+#
+# callPeaks_ChIPseq.sh [-n] GENOME FRAGLEN TBED CBED
+#
+# CALLP stage: macs2 callpeak on one target/control pair of clean.bed.gz
+# files (a line of out/macsPairs.txt). CBED is _NoCTRL for a target with
+# no control ('na' in the pairing file). Broad peaks unless -n.
+#
+# Output: out/macs/PREFIX/PREFIX_peaks.*, where PREFIX is
+# <target>_<control>, the two sample names, or <target>____NoCTRL.
+#
+
+set -e -o pipefail
+
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 
-set -e
+. $SDIR/bin/loadTools.sh
 
 . $SDIR/venv/bin/activate
 MACS=$SDIR/venv/bin/macs2
 
-SDIR="$( cd "$( dirname "$0" )" && pwd )"
+usage() {
+    echo
+    echo "    usage: callPeaks_ChIPseq.sh [-n] GENOME FRAGLEN TBED CBED|_NoCTRL"
+    echo
+    exit 1
+}
 
 CALL_BROAD_PEAKS="--broad"
 while :; do
-    case $1 in
-        -n|--narrow-peaks) CALL_BROAD_PEAKS=" "
+    case ${1:-} in
+        -n|--narrow-peaks) CALL_BROAD_PEAKS=""
         echo
         echo "Calling narrow peaks set"
         echo
@@ -19,9 +37,8 @@ while :; do
 
         -*)
         echo
-        echo "Invalid option ["$1"]"
+        echo "Invalid option [$1]"
         usage
-        exit
         ;;
 
         *) break
@@ -31,62 +48,52 @@ while :; do
     shift
 done
 
+if [ "$#" != "4" ]; then
+    usage
+fi
+
 GBUILD=$1
 FRAGSIZE=$2
-
-case $GBUILD in
-    mm10*)
-    MACS_GENOME=mm
-    ;;
-
-    b37)
-    MACS_GENOME=hs
-    ;;
-
-    *)
-    echo "Invalid Genome [$GBUILD]"
-    exit -1
-    ;;
-esac
-
-echo "MACS GENEOME =" $MACS_GENOME
-
 TBED=$3
-if [ "$#" == "4" ]; then
-    CBED=$4
-    MACS_C_ARG="-c $CBED"
-else
-    CBED="___NoCTRL"
-    MACS_C_ARG=" "
+CBED=$4
+
+MACS_GENOME=$($SDIR/bin/genomeInfo.sh $GBUILD MACS_GSIZE) \
+    || { echo "FATAL ERROR: no MACS genome size for [$GBUILD]"; exit 1; }
+
+echo "MACS GENOME =" $MACS_GENOME
+
+if [[ ! "$FRAGSIZE" =~ ^[1-9][0-9]*$ ]]; then
+    echo "FATAL ERROR: fragment length must be an integer > 0 [$FRAGSIZE]"
+    exit 1
 fi
 
-#
-# Check if control sample is _NoCTRL and reset to Target only calling
-#
+SUFFIX=_postProcess.clean.bed.gz
+
+sampleName() {
+    local name
+    name=$(basename $1)
+    if [[ "$name" != *$SUFFIX ]]; then
+        echo "FATAL ERROR: not a POST clean BED [$1]" >&2
+        return 1
+    fi
+    echo ${name%$SUFFIX}
+}
+
+TNAME=$(sampleName $TBED)
 
 if [ "$CBED" == "_NoCTRL" ]; then
-    CBED="___NoCTRL"
-    MACS_C_ARG=" "
+    CNAME="___NoCTRL"
+    MACS_C_ARG=""
+else
+    CNAME=$(sampleName $CBED)
+    MACS_C_ARG="-c $CBED"
 fi
 
-PREFIX=$(basename ${TBED/_postProcess.*/})_$(basename ${CBED/_postProcess.*/} | sed 's/.*_s_/___/')
-echo $PREFIX
+PREFIX=${TNAME}_${CNAME}
+echo PREFIX=$PREFIX
 
 ODIR=$(dirname $TBED)/macs/$PREFIX
 mkdir -p $ODIR
-
-# TDIR=/scratch/socci/_scratch_ATACSeq/$(uuidgen -t)
-# mkdir -p $TDIR
-# echo $TDIR, $ODIR
-# export TMPDIR=$TDIR
-
-if [ -e /fscratch ]; then 
-    TMPDIR=/fscratch/socci
-else
-    TMPDIR=/scratch/socci
-fi
-
-mkdir -p $TMPDIR
 
 #
 # From:
@@ -115,6 +122,10 @@ mkdir -p $TMPDIR
     #           '-f BED -n %s/%s ' % (peaks_dirname, prefix) + \
     #           '-g %s -p 1e-2 --broad --nomodel --shift 0 --extsize %s --keep-dup all' % (genomesize, fraglen)
 
+#
+# MACS2 writes its temp files to TMPDIR, the per-job directory on
+# /localscratch that bin/runStage.sh creates.
+#
 
 pval_thres=0.01
 
@@ -129,8 +140,5 @@ $MACS callpeak \
     --shift 0 \
     --extsize $FRAGSIZE \
     $CALL_BROAD_PEAKS \
-    --outdir $ODIR
-
-MACS_ERROR=$?
-
-exit $MACS_ERROR
+    --outdir $ODIR \
+    || { echo "FATAL ERROR: macs2 callpeak failed for $PREFIX"; exit 1; }

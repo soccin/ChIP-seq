@@ -1,22 +1,22 @@
-PROJNO=14065
+#
+# Template for an analysis directory on IRIS. Clone the repo into it:
+#
+#   git clone git@github.com:soccin/ChIP-seq.git
+#   (cd ChIP-seq && . 00.SETUP.sh)
+#
+# One run per analysis directory.
+#
 
-#ln -s /juno/res/delivery/elenitk/liangh1/Proj_${PROJNO}/r_001/ pipeline
-#git clone git@github.com:soccin/ChIP-seq.git
+sbatch ./ChIP-seq/pipe.sh \
+    --pairing-file pipeline/*_sample_pairing.txt \
+    pipeline/alignments/*bam
 
-SDIR=ChIP-seq
-ODIR=out
-PAIRS=Proj_${PROJNO}_sample_pairing.txt
+./ChIP-seq/bin/checkRun.sh
 
-bsub -o LSF.00.CTRL/ -W 359 \
-    ./ChIP-seq/pipe.sh \
-        --pairing-file pipeline/*_sample_pairing.txt \
-        pipeline/alignments/*bam
+./ChIP-seq/postPipe.sh
 
-./ChIP-seq/postPipe.sh out
+find out/macs | egrep "_peaks.(broad|narrow)Peak$" \
+    | xargs -n 1 bsub -o SLURM.HOMER/ -J HOMER -W 59 -n 2 -M 16G \
+        ./ChIP-seq/annotateWithHomer.sh
 
-find out/macs/Proj_* | egrep "broad|narrow" | xargs -n 1 ./ChIP-seq/annotateWithHomer.sh
-
-./ChIP-seq/deliverResults.sh pipeline
-
-
-
+# deliverResults.sh is not ported to IRIS (00.ISSUES.md)
