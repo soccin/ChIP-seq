@@ -4,143 +4,205 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Execution environment
 
-This repo is edited on macOS but only runs on the MSKCC Juno Linux cluster. `module`,
-`bsub`/LSF, `picardV2`, and the MACS2 `venv` do not exist locally, so `pipe.sh` and the
-stage scripts cannot be executed here — a local run dies at `module load bedtools` under
-`set -eu` and tells you nothing.
+IRIS (MSKCC, Slurm) only. The JUNO/LSF path was removed in v1.0.0; nothing
+here runs on a laptop. On IRIS the pipeline can be run and tested directly:
+`bash -n` and `Rscript --no-init-file -e 'parse(file=...)'` for syntax, the
+helper scripts by hand, and test runs with `sbatch` in a fresh directory
+(the v1.0.0 test directories are `PortATACseq/PortChIPseq/test*`, inputs in
+`PortChIPseq/inputs/`, test scripts in `PortChIPseq/scripts/`).
 
-Verify shell changes with `bash -n <script>`, or by rendering a function/heredoc fragment
-in isolation. Note that a fragment extracted with `sed`/`head` may report a spurious
-"unexpected end of file" from the truncation itself; trust `bash -n` on the whole file.
-Hand anything needing a real run back to the user.
+There is no test suite, linter or CI in this repo (`00.ISSUES.md` #12).
 
-There is no test suite, linter, or CI in this repo.
+## External dependencies
+
+| What | Where | Version |
+| --- | --- | --- |
+| samtools | `module load samtools/1.20` (`bin/loadTools.sh`) | 1.20 |
+| bedtools | `~/bin/bedtools` on PATH (no module exists) | 2.31.1 |
+| Java | `module load java/23.0.1` (`bin/picardV2`) | 23.0.1 |
+| Slurm wrappers | `~/bin/sbatch` (exports `SBATCH_SCRIPT_DIR`), `~/bin/bsub` (openlava shim), `~/bin/bSync.sh` | |
+| R | on PATH, packages in `getPackageVersions.R` | 4.5.1 |
+| HOMER | `/usersoftware/core001/common/RHEL_8/homer`, genomes hg19, hg38, mm10 (`CHIP_HOMER_DIR`) | |
+| MACS2 | `venv/`, built by `. 00.SETUP.sh` | 2.2.9.1, numpy 1.23.0 |
+
+Vendored in `bin/`: featureCounts (subread 2.1.1, static, md5
+`0eff90d8e30311160dbddda542f17383`), picard 2.25.5
+(`bin/jar/2.25.5/picard.jar`, run only through `bin/picardV2`),
+`wigToBigWig`.
+
+Nothing depends on `~/.Rprofile`: the R scripts use `length()`, `str_c()`
+and so on, and `pipe.sh`/`postPipe.sh` run them with
+`Rscript --no-init-file`. Do not reintroduce `len()`, `cc()`, `DATE()` or
+`getSDIR()`.
 
 ## Working-directory contract
 
-The pipeline is not run from inside this repo. It is cloned as a subdirectory named
-`ChIP-seq` inside a per-project analysis directory, and every command is issued from that
-parent:
+The pipeline is run from an analysis directory that holds the clone (any
+name) and gets `out/`:
 
 ```
-Proj_15235_B/ChIP/          <- cwd for all commands
-├── ChIP-seq/               <- this repo (name matters)
-├── pipeline/               <- symlink to delivery dir with alignments/
-└── out/                    <- ODIR
+Proj_15235_B/ChIP/          <- cwd for all commands; one run per directory
+├── ChIP-seq/               <- this repo
+├── 00.RUNSTATUS.txt        <- run record (pipe.sh)
+├── SLURM.CTRL/ SLURM.0*/   <- control and stage logs
+└── out/                    <- all output; fixed, there is no -o
 ```
 
-This name is load-bearing: `qc_ChIPSeq_01.R` and `qc_ChIPSeq_02.R` do
-`source("ChIP-seq/tools.R")` with a hardcoded relative path.
-
-Equally load-bearing is `out`. Although `pipe.sh` takes `-o|--outdir`, the QC and
-differential scripts hardcode `out/macs` (`qc_ChIPSeq_01.R:9`, `qc_ChIPSeq_02.R:28,67`,
-`R/diffAnalysisPairwise.R:177`). Changing `-o` silently breaks every post-pipeline stage.
-
-The R scripts also call `len()`, which is not defined anywhere in this repo — it comes
-from the user's `~/.Rprofile`. Read that file before assuming an undefined R helper is a bug.
+The R scripts find `tools.R` from their own location (`commandArgs()`
+`--file=`), so the clone can have any name. `out/` is fixed: `-o` was
+removed because the QC and differential scripts and the run records all
+assume it (`00.ISSUES.md` #4).
 
 ## Running
 
-Setup (once per clone) — must be sourced, not run, and is the only way `venv/` appears:
-
 ```bash
-. 00.SETUP.cmds
+sbatch ./ChIP-seq/pipe.sh --pairing-file PAIRS BAM1 [BAM2 ...]
+./ChIP-seq/bin/checkRun.sh          # 0 ok, 1 failed, 2 running, 3 unknown
+./ChIP-seq/postPipe.sh              # refuses a run checkRun.sh does not pass
+find out/macs | egrep "_peaks.(broad|narrow)Peak$" | xargs -n 1 bsub ... ./ChIP-seq/annotateWithHomer.sh
+Rscript --no-init-file ChIP-seq/R/diffAnalysisPairwise.R manifest.csv comps.csv [RUNTAG]
 ```
 
-Full run, from the project dir (see `CMDS.RunProjectTMPL`):
-
-```bash
-bsub -o LSF.00.CTRL/ -W 359 ./ChIP-seq/pipe.sh \
-    --pairing-file pipeline/*_sample_pairing.txt \
-    pipeline/alignments/*bam
-
-./ChIP-seq/postPipe.sh out
-find out/macs | egrep "broad|narrow" | xargs -n 1 ./ChIP-seq/annotateWithHomer.sh
-./ChIP-seq/deliverResults.sh <RESDIR>
-```
-
-`postPipe.sh` runs QC stage 1, then runs QC stage 2 only if `manifest.txt`
-(`SampleID<TAB>Group`, no header) exists in the cwd. Otherwise it prints the command to
-run by hand.
-
-Differential analysis is separate and manual:
-
-```bash
-Rscript --no-save ChIP-seq/R/diffAnalysisPairwise.R <human|mouse> manifest.csv comps.csv [RUNTAG]
-```
+`postPipe.sh` moves BAMs to `out/bam/` and BEDs to `out/bed/`, runs QC
+stage 1, and QC stage 2 if `manifest.txt` (`SampleID<TAB>Group`, no
+header) exists. `annotateWithHomer.sh` and `diffAnalysisPairwise.R` read
+the genome from `00.RUNSTATUS.txt`; they take no genome argument.
+`deliverResults.sh` is not ported (`POST-IRIS-PORT.md`).
 
 ## Architecture
 
-`pipe.sh` is a synchronous LSF driver, not a workflow engine. Each stage fans work out
-with `xargs -n N bsub ...` under a job tag containing `$$`, then blocks on
-`bSync <TAG>` (`bin/bSync`, which polls `bjobs` and submits a `-K` dependent job) before
-the next stage starts. `lsf.sh` wraps `bsub` purely to echo each submission. Stages 4-6
-instead chain with `-w "post_done(...)"` and only the final DESeq job is `bSync`'d.
+`pipe.sh` is the control job, a copy of the ATAC-seq model (`devs`
+28978c9; `docs/SLURM_PORT.md`). It runs under `sbatch` on `cmobic_cpu`
+with `--qos=priority`, submits every stage job with `chipSub` (through
+`~/bin/bsub` and `bin/runStage.sh`) and blocks between stages with
+`waitStage` = `bSync` + `bCheck` (`bin/slurmTools.sh`), which reads job
+states from `sacct`. Stage jobs are `SHORT` (1:59, short partitions) or
+`LONG` (12 h, qos priority), chosen per job by `runClass` from input size
+and the `RATE_*` minutes per GB.
 
-Consequences worth knowing: the driver must stay alive for the whole run, so it is itself
-submitted with a long wall clock; and stage boundaries are the natural place to resume a
-failed run (there are commented-out `if [ "" ]; then` guards in `pipe.sh` used to skip
-stages 1-2 during debugging).
+Up front, before any submission, `pipe.sh` checks: the genome of every BAM
+(`bin/getGenomeBuildBAM.sh`, all equal, a row of `GENOMES.tsv`), every BAM
+header against `lib/genomes/<GENOME>.genome`, one unique `@RG SM` per BAM,
+paired or single-end reads against `-s`, and that the pairing file is
+readable. It writes `out/pipeline_info/samples.tsv` (SAMPLE, BAM, PBAM),
+which every later step reads.
 
-Stages:
+Stages (job name `qChIP-Seq_<STAGE>_<pid>`, log `SLURM.<nn>.<STAGE>/`):
 
-1. **Post-processing** — one of three sibling scripts by read-type flags:
-   `postMapBamProcessing_ChIPSeq.sh` (default), `_NoPP.sh` (`--proper-pair-off`, for
-   samples where translocations matter), `_SE.sh` (`-s`). Applies the ENCODE3 filter
-   recipe (MAPQ>=30, `-F 3852`, main chromosomes only, no MT/decoys), then emits both a
-   filtered `*_postProcess.bam` and a `*.clean.bed.gz`.
-2. **bigWig** — `makeBigWigFromBEDZ.sh`, scaled to 10M reads unless a scale factor is
-   passed. Also runs `macs2 predictd` per sample; the resulting `.log` files are the
-   only source of fragment length.
-3. **Peak calling** — `generateMACSArgs.R` resolves the pairing file against actual BAM
-   names into target/control pairs, which `callPeaks_ChIPseq.sh` consumes two at a time.
-   Broad peaks are the default; `-n` switches to narrow.
-4. **Merge peaks** — `mergePeaksToSAF.sh`, merging within 500bp into a single SAF.
-5. **Counts** — `featureCounts` over the merged SAF against all post-processed BAMs.
-6. **Scale factors** — `getDESeqScaleFactors.R`, writing the *inverse* of DESeq2's
-   `sizeFactors` (this inversion is deliberate; see `NOTES.md`).
+1. **POST** — one of `postMapBamProcessing_ChIPSeq.sh` (default),
+   `_NoPP.sh` (`--proper-pair-off`), `_SE.sh` (`-s`), arguments `GENOME
+   SAMPLE BAM`. ENCODE3 filter (MAPQ >= 30, `-F 3852`, contigs of the genome
+   file), picard sorts, writes `out/<SM>_postProcess.bam` and
+   `.clean.bed.gz`. Intermediates under `/scratch/core001/bic/$USER/ChIPSeq`,
+   removed on exit.
+2. **BW** — `makeBigWigFromBEDZ.sh`: bigWig scaled to 10M reads, and
+   `macs2 predictd`, whose `.log` is the only source of fragment length. A
+   predictd failure fails the job.
+   Then, in the control job, the median fragment length
+   (`getMedianFragmentLengthFromPredictDFile.R`), which must be a positive
+   integer; one value for every MACS call. Without a pairing file the run
+   stops here, `COMPLETED`.
+3. **CALLP** — `generateMACSArgs.R` (control job) resolves the pairing file
+   against `samples.tsv` by exact name into `out/macsPairs.txt`;
+   `callPeaks_ChIPseq.sh` runs one MACS call per line. Broad by default.
+4. **MergePeaks** — `mergePeaksToSAF.sh`, peaks within 500 bp, one SAF.
+5. **Count** — `bin/countPeaks.sh`: featureCounts 2.1.1
+   `-p --countReadPairs` (no `-p` with `-s`), then Check A. Beside it, one
+   **CountCheck** job per sample (`bin/assignedCheck.sh`, Check B); the
+   control job compares them (`bin/checkCounts.sh`) and writes
+   `out/macs/peaks_raw_fcCounts.checks.txt`.
+6. **DESEQ** — `getDESeqScaleFactors.R`, the *inverse* of DESeq2's
+   `sizeFactors` (deliberate; `NOTES.md`).
 
-The fragment length passed to MACS is a single scalar: the median across all samples of
-the per-sample `predictd` estimates, computed by
-`getMedianFragmentLengthFromPredictDFile.R`. One outlier sample shifts every peak call.
+Then a `sacct` sweep of every stage job and the deliverables check;
+`STATUS=COMPLETED` is written last.
 
-Provenance is written to `$ODIR/pipeline_info/cmd.sh.log` (git tag, remote, cwd, args) at
-the end of every run, and `date` is written to `00_PIPE_DONE` / `01_POST_DONE` as stage
-sentinels.
+### Run records
 
-### Pairing file
+- `00.RUNSTATUS.txt`: `STATUS` (RUNNING, COMPLETED, FAILED), `STAGE`,
+  `RC`, `MESSAGE` (the reason, from the failing check or the failed job's
+  first FATAL log line), `GENOME`, `SAMPLES`, `FRAGLEN`, options, control
+  job id. Written by `pipe.sh` and its `EXIT` trap.
+- `SLURM.CTRL/jobs.tsv`: every stage job, its sample and log.
+- `#CHIP_EXIT=<rc>`: last line of every stage log (`bin/runStage.sh`).
+- `out/pipeline_info/cmd.sh.log`: version (`git describe --dirty`), options,
+  genome, samples, fragment length, tool versions.
 
-Two columns, control then target. `na` in column 1 means target-only, which
-`generateMACSArgs.R` maps to the sentinel `_NoCTRL` and `callPeaks_ChIPseq.sh` turns into
-an omitted `-c`. Without `--pairing-file` the pipeline warns up front and stops after
-stage 2.
+One run per directory: `pipe.sh` refuses a directory with
+`00.RUNSTATUS.txt`, `SLURM.CTRL/jobs.tsv`, `out/` or `00_PIPE_DONE`. No
+resume.
 
-Sample matching is by regex (`<name>_.*postProcess`), not exact string. A name that is a
-prefix of another sample's name matches both and aborts as "degenerate target/control".
+### Temp files
 
-### Genome handling
+Never `/tmp`. `bin/runStage.sh` gives each stage job a `TMPDIR` under
+`/localscratch/$USER` (`CHIP_LOCAL_TMP`) and removes it; picard, sort,
+MACS2, featureCounts and R use it.
 
-`getGenomeBuildBAM.sh` identifies the build by md5 of the sorted `@SQ` header lines, and
-recognizes far more builds than the pipeline actually supports. Downstream,
-`callPeaks_ChIPseq.sh` and `makeBigWigFromBEDZ.sh` accept only `mm10*` and `b37`, and
-`lib/genomes/` holds only b37, mm10, mm10+b37, mouse_mm10. A BAM that resolves to `hg19`,
-`GRCh37-lite`, or `mm9Full` passes the initial check and then fails several stages in.
-Adding a build means touching the md5 case, both downstream case statements, and
-`lib/genomes/`.
+## Genome builds
 
-`annotateWithHomer.sh` is hardcoded to hg19 regardless of the detected genome, and prints
-a warning saying so. It also depends on a HOMER install at a hardcoded path.
+A genome is named by its build tag everywhere: `b37` (GRCh37, contigs
+`1`..`22`, `X`, `Y`, `MT`), `hg38` (GRCh38, `chr` contigs; the GDC
+`GRCh38.d1.vd1` reference; ATAC-seq still calls it `b38`) and `mm10`.
+Species words and stand-in names are errors.
+
+- `lib/genomes/GENOMES.tsv` holds every genome-dependent value (MACS
+  genome size, HOMER genome, TxDb, OrgDb, whether to add `chr` for
+  annotation). A supported genome is a row of it. Shell reads it with
+  `bin/genomeInfo.sh TAG FIELD`, R with `genomeInfo()` in `tools.R`; both
+  fail on an unknown tag or field. No stage script names a genome.
+- `lib/genomes/<TAG>.genome` lists autosomes, X and Y only. It is the POST
+  region set and the chromosome sizes.
+- Nobody types the genome of a run: `pipe.sh` detects it and records it;
+  post-run tools read `GENOME=` from `00.RUNSTATUS.txt`.
+- `bin/getGenomeBuildBAM.sh` knows more builds than are supported, so that
+  unsupported ones get a named error. Keep it identical to ATAC-seq's.
+- b37 is supported but untested on IRIS (`00.ISSUES.md` #1).
+
+Adding a build: a row in `GENOMES.tsv`, `lib/genomes/<TAG>.genome`
+(checked against the reference `.fai`), the md5 entry if missing, the HOMER
+genome and annotation packages, and a test run.
+
+## Reliability rules
+
+The featureCounts bug (v0.7.0 to v0.9.0 counted reads, not fragments, in
+every column, and nothing noticed for two and a half years) is why these
+exist:
+
+1. Errors exit non-zero with a message that names the cause (`exit 1`,
+   `quit(status = 1)`, `fatal()`); usage errors too.
+2. No silent fallback: a missing input, an unmatched name, a missing
+   fragment length, an unknown genome or a failed check stops the run.
+3. Names are matched exactly: samples by `SM`, pairing-file and manifest
+   entries by string equality, genomes by tag. No regex or prefix matching
+   on names.
+4. The run detects what it can and checks what it is told (`-s` against
+   the reads, BAM headers against the genome file).
+5. Counts are never accepted unchecked (Checks A and B); `COMPLETED`
+   requires every deliverable; `postPipe.sh` needs `checkRun.sh` to pass.
+6. No dependence on personal configuration.
+7. Every run records what it used.
 
 ## Conventions
 
-- Version lives in five places that must move together, and has drifted before:
-  `README.md`, `VERSION.md` (which also pins the full R/Python package set),
-  `CHANGELOG.md` (entry plus the compare links at the bottom), `docs/output.md`, and the
-  `cat()` banner in `getPackageVersions.R`. `pipe.sh` reports its own version from
-  `git describe`, so it needs no edit but does need the release tag to be pushed.
-- `docs/output.html` and `docs/output.pdf` are rendered from `docs/output.md` and must be
-  regenerated when it changes; the render command is not captured in the repo.
-- Superseded scripts go to `attic/` rather than being deleted.
-- Shell: `set -eu`, `SDIR="$( cd "$( dirname "$0" )" && pwd )"` for self-location, and
-  `bin/` prepended to `PATH` for vendored binaries (`featureCounts`, `wigToBigWig`,
-  `picardV2`, `bSync`).
+- Shared with ATAC-seq: `bin/slurmTools.sh`, `bin/runStage.sh`,
+  `bin/loadTools.sh`, `bin/checkRun.sh`, `bin/countPeaks.sh`,
+  `bin/checkCounts.sh`, `bin/assignedCheck.sh`, `bin/getGenomeBuildBAM.sh`
+  were copied from ATAC-seq `devs` 28978c9 with `ATAC` renamed `CHIP`.
+  Local changes: `loadTools.sh` is safe under `set -u`; `countPeaks.sh` and
+  `checkCounts.sh` take `--single-end`, and `countPeaks.sh` puts the first
+  failing sample into its FATAL line (so `MESSAGE` names it); `checkCounts.sh` finds BAMs moved
+  to `out/bam/`; `getGenomeBuildBAM.sh` prints `hg38`, adds `mm10+b37` and
+  `hg38+mm39`, and fails on an unreadable header. Diff again when ATAC
+  releases v2.0.0 and offer these back.
+- `bin/picardJvm.sh` is PEMapper's (v_4.1.0) with `PEMAP_` renamed `CHIP_`.
+- Version lives in five places that must move together: `README.md`,
+  `VERSION.md`, `CHANGELOG.md` (entry and compare links), `docs/output.md`
+  and the `cat()` banner in `getPackageVersions.R`. `pipe.sh` reports
+  `git describe`, so the tag must be pushed.
+- `docs/output.html` and `.pdf` are rendered from `docs/output.md` and must
+  be regenerated when it changes (`00.ISSUES.md` #11).
+- Superseded scripts go to `attic/` rather than being deleted. Open issues
+  in `00.ISSUES.md`, closed ones in `attic/zzISSUES.md`.
+- Shell: `set -e -o pipefail` (and `-u` where safe), `SDIR` self-location,
+  `|| { echo "FATAL ERROR: ..."; exit 1; }` on every step that can fail;
+  `logReason` puts the first FATAL line of a failed job into `MESSAGE`.

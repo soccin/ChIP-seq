@@ -12,6 +12,8 @@ An example of how we create the raw counts matrix, based on a gtf or SAF (below)
 
 subread-1.6.0-Linux-x86_64/bin/featureCounts -O -Q 10 -p -T 10 -F SAF -a  <PeakCoordinates_inSAFformat>  -o Peaks_raw_ftCounts.txt  <tab-separated list of all bam files to be processed>
 
+(2026-10-11: in featureCounts 2.x, `-p` alone only declares the input paired and reads are counted; fragments need `-p --countReadPairs`. The pipeline runs 2.1.1 with `-p --countReadPairs` since v1.0.0; v0.7.0 to v0.9.0 ran 2.0.6 with `-p` alone and counted reads.)
+
 3) Get the DESeq2 sizeFactors for the above matrix, and as you’ve already noticed, they’re the inverse of what we’re used to dealing with.
 (and if curious, can make scatter plot of [inverse] size factor vs the sequencing depth-based normalization for comparison)
 
