@@ -39,6 +39,22 @@
 #SBATCH -J CTRL.ChIP
 #SBATCH -o SLURM.CTRL/%j.out
 
+# ON HOLD (2026-10-12): the IRIS port is not finished. Delete this block
+# to resume; see 00.SPEC_v1.0.0.md section 0.
+cat >&2 <<'EOF'
+
+    FATAL ERROR: ChIP-seq pipeline ON HOLD
+
+    The port to IRIS/Slurm is not finished.
+    Do NOT USE THIS PIPELINE until it is.
+
+    Do not fall back to v0.9.0 or earlier: from v0.7.0 their count
+    matrix holds reads, not fragments (CHANGELOG.md).
+
+EOF
+exit 1
+# END ON HOLD
+
 set -eu
 
 SDIR=${SBATCH_SCRIPT_DIR:-$( cd "$( dirname "$0" )" && pwd )}
