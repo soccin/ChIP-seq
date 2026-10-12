@@ -1,10 +1,12 @@
 suppressPackageStartupMessages({
-require(tidyverse)
-require(fs)
-require(openxlsx)
+library(tidyverse)
+library(fs)
+library(openxlsx)
 })
 
-source("ChIP-seq/tools.R")
+SDIR <- commandArgs(trailingOnly = FALSE) |>
+    str_subset("^--file=") |> str_remove("^--file=") |> dirname()
+source(file.path(SDIR, "tools.R"))
 
 peakFiles=dir_ls("out/macs",recur=T,regex="peaks.xls$")
 
@@ -75,7 +77,7 @@ extract_common_prefix<-function(x) {
     x<-sort(x)
     # split the first and last element by character
     d_x<-strsplit(x[c(1,length(x))],"")
-    minLen=min(map_vec(d_x,len))
+    minLen=min(map_vec(d_x,length))
     d_x=map(d_x,~.[1:minLen])
     # search for the first not common element and so, get the last matching one
     der_com<-match(FALSE,do.call("==",d_x))-1
@@ -86,5 +88,5 @@ extract_common_prefix<-function(x) {
 
 projNo=get_project_number()
 
-write.xlsx(stats,cc("qcChIPSeq",projNo,".xlsx"))
+write.xlsx(stats,str_c("qcChIPSeq",projNo,".xlsx",sep="_"))
 

@@ -30,6 +30,7 @@ packages <- c(
   'org.Hs.eg.db',
   'org.Mm.eg.db',
   'TxDb.Hsapiens.UCSC.hg19.knownGene',
+  'TxDb.Hsapiens.UCSC.hg38.knownGene',
   'TxDb.Mmusculus.UCSC.mm10.knownGene'
 )
 

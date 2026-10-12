@@ -7,7 +7,7 @@ if [ "$RESDIR" == "" ]; then
     echo "  usage: deliverResults.sh RESDIR"
     echo "    RESDIR = .../pi/invest/projNo/r_###"
     echo
-    exit
+    exit 1
 fi
 
 set -eu

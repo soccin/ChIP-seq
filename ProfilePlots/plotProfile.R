@@ -20,7 +20,7 @@ mm=xx %>%
 
 colors=colorRamp2(seq(quantile(mm,0.01),quantile(mm,.99),len=9),RColorBrewer::brewer.pal(9, "Reds"))
 
-pdf(file=cc("pltSummitProfile",gsub("/","___",htitle),".pdf"),width=3,height=12)
+pdf(file=str_c("pltSummitProfile",gsub("/","___",htitle),".pdf",sep="_"),width=3,height=12)
 Heatmap(mm,
     cluster_rows=F,cluster_columns=F,
     show_row_names=F,show_column_names=F,
