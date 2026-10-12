@@ -28,14 +28,16 @@ See the MACS2 website [https://github.com/taoliu/MACS] for more information on t
 
 There is also an aggregate peak file there which combines the peaks from all samples
 - macs/macsPeaksMerged.saf
-and a file that counts the coverage for each sample within these combined peaks
+and a file that counts, for each sample, the fragments (read pairs; reads for single-end runs) that overlap each combined peak
 - macs/peaks_raw_fcCounts.txt
+
+Before v1.0.0 (v0.7.0 to v0.9.0) this file counted each read of a pair separately, so every count was twice the number of fragments.
 
 _chipSeq/qc_: QC report/plots for ChIP related QC.
 
 - qcChIPSeq_PROJECT-NUM_.xlsx - is a report for the total number of peaks found and the number of significant peaks. Low number of peaks could indicate an issue with the ChIP.
 
-- qcChIPSeq_PROJECT-NUM_.pdf - plots of the number/percentage of mapped reads that fall in MACS peaks and a PCA plot of the aggregate peak counts for the samples.
+- qcChIPSeq_PROJECT-NUM_.pdf - plots of the number/percentage of fragments that fall in MACS peaks and a PCA plot of the aggregate peak counts for the samples.
 
 _chipSeq/bw_:
 Normalized (to 10million reads) bigwig files for loading IP profiles into IGV [http://software.broadinstitute.org/software/igv/].

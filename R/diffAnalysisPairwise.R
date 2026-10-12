@@ -1,15 +1,18 @@
 args <- commandArgs(trailing = TRUE)
-if (len(args) < 3) {
+if (length(args) < 2 || length(args) > 3) {
   cat("
 ================================================================================
   Pairwise Differential ChIP-seq Peak Analysis using edgeR
 ================================================================================
 
 USAGE:
-  Rscript diffAnalysisPairwise.R GENOME MANIFEST COMPARISONS [RUNTAG]
+  Rscript --no-init-file ChIP-seq/R/diffAnalysisPairwise.R MANIFEST COMPARISONS [RUNTAG]
+
+  Run from the analysis directory of a completed pipe.sh run. The genome
+  is read from GENOME= in 00.RUNSTATUS.txt, and the annotation packages
+  and the chr rule from ChIP-seq/lib/genomes/GENOMES.tsv.
 
 REQUIRED ARGUMENTS:
-  GENOME        Genome assembly: 'human' or 'mouse'
   MANIFEST      Sample manifest CSV file (with header row)
   COMPARISONS   Comparison pairs CSV file (NO header row)
 
@@ -23,6 +26,9 @@ OUTPUT FILES:
 --------------------------------------------------------------------------------
 MANIFEST FILE FORMAT (with header):
   Three columns: MapID, SampleID, Group
+  MapID must equal a sample name of the run (its @RG SM tag, as in
+  out/pipeline_info/samples.tsv) exactly. SampleID is the name used in
+  the output. Samples of the run not in the manifest are left out.
 
   Example:
     MapID,SampleID,Group
@@ -50,56 +56,13 @@ COMPARISONS FILE FORMAT (NO header):
 
 --------------------------------------------------------------------------------
 EXAMPLE USAGE:
-  Rscript diffAnalysisPairwise.R mouse R/sampleManifest.csv R/comparisions.csv
-  Rscript diffAnalysisPairwise.R mouse manifest.csv comps.csv run1
+  Rscript --no-init-file ChIP-seq/R/diffAnalysisPairwise.R manifest.csv comps.csv
+  Rscript --no-init-file ChIP-seq/R/diffAnalysisPairwise.R manifest.csv comps.csv run1
 
 ================================================================================
 
-")
-  quit()
-}
-
-#' Fix sample names based on naming convention
-#'
-#' Detects whether samples use PEmap or BIC naming and applies the appropriate
-#' transformation to match the sample manifest.
-#'
-#' @param sample_names Character vector of raw sample names
-#' @return Character vector of cleaned sample names matching manifest
-fix_sample_names <- function(sample_names) {
-  if (grepl("___MD", sample_names[1])) {
-    fix_sample_names_pemap(sample_names)
-  } else {
-    fix_sample_names_bic(sample_names)
-  }
-}
-
-#' Fix sample names using BIC naming convention
-#'
-#' Removes processing suffixes and path prefixes, then maps to manifest IDs.
-#'
-#' @param sample_names Character vector of BIC-format sample names
-#' @return Character vector of cleaned sample names
-fix_sample_names_bic <- function(sample_names) {
-  sample_names |>
-    gsub("_postProcess.*", "", x = _) |>
-    gsub(".*_s_", "s_", x = _) |>
-    (\(x) sampRename[x])() |>
-    unname()
-}
-
-#' Fix sample names using PEmap naming convention
-#'
-#' Extracts basename and removes PEmap suffixes, then maps to manifest IDs.
-#'
-#' @param sample_names Character vector of PEmap-format sample names
-#' @return Character vector of cleaned sample names
-fix_sample_names_pemap <- function(sample_names) {
-  sample_names |>
-    basename() |>
-    gsub("___.*", "", x = _) |>
-    (\(x) sampRename[x])() |>
-    unname()
+", file = stderr())
+  quit(save = "no", status = 1)
 }
 
 #' Create reverse log transformation for ggplot2 volcano plots
@@ -140,19 +103,6 @@ png_cairo <- function(filename, width = 14, height = 8.5, pointsize = 12,
   )
 }
 
-#' Merge PNG files into a single PDF using ImageMagick
-#'
-#' @param file_spec Character file specification with printf-style formatting
-merge_pngs <- function(file_spec) {
-  file_re <- gsub("_%\\d+d", ".*", file_spec)
-  pdf_file <- gsub("_%\\d+d.*", ".pdf", file_spec)
-  system2(
-    "convert",
-    c(sort(dir_ls(regex = file_re)), pdf_file),
-    stderr = cc("stderr", "mergePNGs", "convert", DATE())
-  )
-}
-
 cat("Loading libraries ...")
 suppressPackageStartupMessages({
   library(ChIPseeker)
@@ -169,71 +119,94 @@ suppressPackageStartupMessages({
 })
 cat(" done\n")
 
-# Locate feature counts summary file
-# Works with both ATACseq and ChIPSeq pipeline structures
-peak_counts_file <- fs::dir_ls(regex = "peaks_raw_fcCounts.txt.summary")
+# Shared helpers (fatal, run_genome, genomeInfo, read_samples), found
+# from this script's directory; no ~/.Rprofile
+SDIR <- commandArgs(trailingOnly = FALSE) |>
+  str_subset("^--file=") |>
+  str_remove("^--file=") |>
+  dirname()
+source(file.path(SDIR, "..", "tools.R"))
 
-if (len(peak_counts_file) == 0) {
-  peak_counts_file <- fs::dir_ls("out/macs",
-                                 regex = "peaks_raw_fcCounts.txt.summary")
+peak_counts_file <- "out/macs/peaks_raw_fcCounts.txt.summary"
+if (!file_exists(peak_counts_file)) {
+  fatal(str_glue("no count summary [{peak_counts_file}]; run from the analysis directory"))
 }
 
-feature_summary <- read_tsv(peak_counts_file)
+feature_summary <- read_tsv(peak_counts_file, show_col_types = FALSE)
 
 # Parse command line arguments
-GENOME <- args[1]
-MANIFEST_FILE <- args[2]
-COMPARISON_FILE <- args[3]
-RUNTAG <- if (len(args) == 4) args[4] else ""
+MANIFEST_FILE <- args[1]
+COMPARISON_FILE <- args[2]
+RUNTAG <- if (length(args) == 3) args[3] else ""
 
-# Set genome-specific annotation databases
-if (GENOME == "human") {
-  txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene::TxDb.Hsapiens.UCSC.hg19.knownGene
-  annoDb <- "org.Hs.eg.db"
-} else if (GENOME == "mouse") {
-  txdb <- TxDb.Mmusculus.UCSC.mm10.knownGene::TxDb.Mmusculus.UCSC.mm10.knownGene
-  annoDb <- "org.Mm.eg.db"
-} else {
-  cat("\n\tUnknown GENOME", GENOME, "\n")
-  cat("\tValid genomes: human, mouse\n\n")
-  quit()
+# Genome of the run and its annotation databases (GENOMES.tsv)
+GENOME <- run_genome()
+txdb_pkg <- genomeInfo(GENOME, "TXDB")
+annoDb <- genomeInfo(GENOME, "ORGDB")
+add_chr <- genomeInfo(GENOME, "ADD_CHR") == "yes"
+for (pkg in c(txdb_pkg, annoDb)) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    fatal(str_glue("annotation package [{pkg}] for genome [{GENOME}] is not installed"))
+  }
 }
+txdb <- getExportedValue(txdb_pkg, txdb_pkg)
+cat("GENOME =", GENOME, " TxDb =", txdb_pkg, " OrgDb =", annoDb, "\n")
 
-# Load sample manifest and create renaming lookup
-manifest <- read_csv(MANIFEST_FILE) |> arrange(SampleID)
+# Load sample manifest and create renaming lookup. MapID must equal a
+# sample of the run exactly.
+samples <- read_samples()
+manifest <- read_csv(MANIFEST_FILE, show_col_types = FALSE) |> arrange(SampleID)
+
+not_samples <- setdiff(manifest$MapID, samples$SAMPLE)
+if (length(not_samples) > 0) {
+  fatal("manifest MapIDs that are not samples of this run:",
+        str_c(not_samples, collapse = " "),
+        "; samples:", str_c(samples$SAMPLE, collapse = " "))
+}
 
 sampRename <- manifest$SampleID
 names(sampRename) <- manifest$MapID
+
+#' Sample names for count columns: the postProcess BAM path to the
+#' sample (samples.tsv), then MapID to SampleID. NA for a sample of the
+#' run that is not in the manifest.
+#'
+#' @param cols Character vector of count column names (BAM paths)
+#' @return Character vector of manifest SampleIDs
+fix_sample_names <- function(cols) {
+  unname(sampRename[pbam_to_sample(cols, samples)])
+}
 
 # Process feature counts summary for QC
 feature_summary <- feature_summary |>
   gather(Sample, Count, -Status) |>
   mutate(Sample = fix_sample_names(Sample)) |>
-  mutate(Status = gsub("_.*", "", Status)) |>
+  filter(!is.na(Sample)) |>
+  mutate(Status = str_remove(Status, "_.*")) |>
   group_by(Sample, Status) |>
   summarize(Counts = sum(Count), .groups = "drop") |>
   mutate(Status = ifelse(Status == "Assigned", "InPeaks", "Outside"))
 
 # Load raw feature counts matrix
-raw_counts <- read_tsv(gsub(".txt.summary$", ".txt", peak_counts_file),
-                       comment = "#")
+raw_counts <- read_tsv(str_remove(peak_counts_file, ".summary$"),
+                       comment = "#", show_col_types = FALSE)
 
 # Extract peak annotation
 peak.annote <- raw_counts |>
   select(PeakNo = Geneid, Chr, Start, End, Strand, Length)
 
 # Remove excluded samples from manifest
-manifest <- manifest |> filter(!grepl("^EXC", Group))
+manifest <- manifest |> filter(!str_detect(Group, "^EXC"))
 
 # Create count matrix for edgeR
 count_matrix <- raw_counts |>
-  select(PeakNo = Geneid, matches(".bam$")) |>
+  select(PeakNo = Geneid, all_of(samples$PBAM)) |>
   data.frame(check.names = FALSE) |>
   column_to_rownames("PeakNo")
 
 colnames(count_matrix) <- fix_sample_names(colnames(count_matrix))
 
-# Remove columns not in manifest (NA values from failed sample name mapping)
+# Remove columns of samples that are not in the manifest
 count_matrix <- count_matrix[, !is.na(colnames(count_matrix))]
 
 # Validate all count matrix columns are in manifest
@@ -383,10 +356,11 @@ do_differential_analysis <- function(dge_object, design, contrast,
 
   # Annotate significant peaks with nearest genes
   if (nrow(sig_results) > 0) {
-    # Add "chr" prefix if missing (genome-dependent)
-    if (substr(sig_results$Chr[1], 1, 3) != "chr") {
+    # Add the "chr" prefix for builds whose contigs lack it (GENOMES.tsv
+    # ADD_CHR: b37 only), to match the UCSC TxDb
+    if (add_chr) {
       sig_peaks_bed <- sig_peaks_bed |>
-        mutate(V1 = paste0("chr", V1)) |>
+        mutate(V1 = str_c("chr", V1)) |>
         data.frame()
     } else {
       sig_peaks_bed <- sig_peaks_bed |> data.frame()
@@ -420,8 +394,9 @@ do_differential_analysis <- function(dge_object, design, contrast,
 }
 
 # Extract project number from working directory for output naming
-working_dir_parts <- strsplit(getwd(), "/")[[1]]
-project_id <- grep("^Proj_|^B-\\d+", working_dir_parts, value = TRUE)
+working_dir_parts <- str_split_1(getwd(), "/")
+project_id <- str_subset(working_dir_parts, "^Proj_|^B-\\d+") |>
+  first(default = "")
 
 # Load comparisons file and extract group names from design matrix
 group_names <- gsub("group", "", colnames(design))
@@ -442,10 +417,10 @@ for (comparison_pair in transpose(comparisons)) {
   if (!(sum(contrast != 0) > 0 & sum(contrast) == 0)) {
     cat("\nERROR: Invalid contrast specification\n")
     cat("Check comparison file format\n\n")
-    stop("Invalid contrast")
+    fatal("Invalid contrast")
   }
 
-  results_list[[len(results_list) + 1]] <-
+  results_list[[length(results_list) + 1]] <-
     do_differential_analysis(dge, design, contrast)
 }
 cat("========================================================\n")
@@ -463,20 +438,20 @@ summary_stats <- map(result_tables, nrow) |>
   gather(Comparison, NumSig)
 
 # Write results to Excel file
-output_xlsx <- cc(project_id, RUNTAG, "DiffPeaksEdgeR_V3.xlsx")
+output_xlsx <- str_c(project_id, RUNTAG, "DiffPeaksEdgeR_V3.xlsx", sep = "_")
 write.xlsx(
   c(list(Summary = summary_stats), result_tables),
   output_xlsx
 )
 
 # Generate PDF with PCA and differential analysis plots
-output_pdf <- cc(project_id, RUNTAG, "DiffPeaks_V3.pdf")
+output_pdf <- str_c(project_id, RUNTAG, "DiffPeaks_V3.pdf", sep = "_")
 pdf(output_pdf, width = 11, height = 8.5)
 
 print(pca_plot)
 print(pca_plot_labeled)
 
-for (i in seq(len(results_list))) {
+for (i in seq_along(results_list)) {
   print(results_list[[i]]$p.ma)
   print(results_list[[i]]$p.vc)
 }

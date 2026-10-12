@@ -1,45 +1,44 @@
 #!/bin/bash
-
-JAVA_V17_LATEST=$(module avail 2>&1 | fgrep java | fgrep 17 | sort -Vr | head -1)
-
-module load $JAVA_V17_LATEST
+#
+# picardV2 COMMAND [ARG ...]
+#
+# Run the vendored picard 2.25.5 jar (bin/jar/2.25.5/picard.jar) under
+# Java 23. The POST scripts call it as $SDIR/bin/picardV2.
+#
+#   java      module java/23.0.1, pinned. The old wrapper grepped
+#             "module avail" for "17", which on IRIS matches java/1.7.0_80.
+#   heap      from the job's memory (bin/picardJvm.sh)
+#   temp      TMP_DIR and java.io.tmpdir are $TMPDIR, the node-local
+#             per-job directory bin/runStage.sh creates and removes
+#
+# The LSF self-submit mode ("picardV2 LSF COMMAND ...") is gone.
+#
 
 SDIR="$( cd "$( dirname "$0" )" && pwd )"
 PICARDJAR=$SDIR/jar/2.25.5/picard.jar
+CHIP_JAVA_MODULE=${CHIP_JAVA_MODULE:-java/23.0.1}
+
+if [ "$#" -lt "1" ]; then
+    echo "usage: picardV2 COMMAND [ARG ...]"
+    exit 1
+fi
 
 COMMAND=$1
 shift 1
 
-if [ "$COMMAND" == "" ]; then
-    java -jar $PICARDJAR 2>&1 | less -R
-    exit
+if [ "$(type -t module)" != "function" ]; then
+    . /etc/profile.d/modules.sh
 fi
 
-if [ "$COMMAND" == "LSF" ]; then
-    BSUB=YES
-    COMMAND=$1
-    shift
-else
-    BSUB=NO
+module load $CHIP_JAVA_MODULE \
+    || { echo "FATAL ERROR: module load $CHIP_JAVA_MODULE failed"; exit 1; }
+
+. $SDIR/picardJvm.sh
+
+if [ -z "${TMPDIR:-}" ] || [ ! -d "$TMPDIR" ]; then
+    echo "FATAL ERROR: TMPDIR [${TMPDIR:-}] is not a directory"
+    exit 1
 fi
 
-TDIR=/scratch/socci
-if [ -e /fscratch ]; then
-    TDIR=/fscratch/socci
-fi
-
-mkdir -p $TDIR
-
-if [ "$BSUB" == "YES" ]; then
-
-    bsub -o LSF.PIC/ -J PIC_${COMMAND}_$$ -R "rusage[mem=10]" -n 3 -W 359 \
-        java -Xmx23g -Djava.io.tmpdir=$TDIR -XX:ParallelGCThreads=2 -XX:ConcGCThreads=2 \
-            -jar $PICARDJAR $COMMAND TMP_DIR=$TDIR VALIDATION_STRINGENCY=SILENT $*
-
-else
-
-    java -Xmx23g -Djava.io.tmpdir=$TDIR -XX:ParallelGCThreads=2 -XX:ConcGCThreads=2 \
-        -jar $PICARDJAR $COMMAND TMP_DIR=$TDIR VALIDATION_STRINGENCY=SILENT $*
-
-fi
-
+java -Xmx${CHIP_XMX_MB}m -Djava.io.tmpdir=$TMPDIR $CHIP_JVM_GC_OPTS \
+    -jar $PICARDJAR $COMMAND TMP_DIR=$TMPDIR VALIDATION_STRINGENCY=SILENT "$@"
