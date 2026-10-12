@@ -208,8 +208,9 @@ exist:
   `VERSION.md`, `CHANGELOG.md` (entry and compare links), `docs/output.md`
   and the `cat()` banner in `getPackageVersions.R`. `pipe.sh` reports
   `git describe`, so the tag must be pushed.
-- `docs/output.html` and `.pdf` are rendered from `docs/output.md` and must
-  be regenerated when it changes (`00.ISSUES.md` #11).
+- `docs/output.html` and `.pdf` are rendered from `docs/output.md` with
+  `make -C ChIP-seq/docs` (pandoc, xelatex) and must be regenerated when it
+  changes.
 - Superseded scripts go to `attic/` rather than being deleted. Open issues
   in `00.ISSUES.md`, closed ones in `attic/zzISSUES.md`.
 - Shell: `set -e -o pipefail` (and `-u` where safe), `SDIR` self-location,
