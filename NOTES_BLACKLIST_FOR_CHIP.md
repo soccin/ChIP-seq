@@ -1,7 +1,9 @@
 # Peak blacklist: note for the ChIP-seq repo
 
-From the ATAC-seq repo, branch `fix/blacklist` (commits 1f21b5b,
-6eef929, e940f2e; cut from `encode-2026`, not merged yet). This is
+From the ATAC-seq repo, branch `fix/blacklist` (cut from
+`encode-2026`, not merged yet). Its commits 6eef929 and e940f2e have a
+first version that overwrote MACS2's output; a later commit replaces
+it. This is
 finding C-03 of the ATAC `ENCODE_PIPE_CONCORDANCE.md`: no peak set was
 ever filtered against a blacklist. The ENCODE ChIP-seq pipeline
 (chip-seq-pipeline2) filters its peaks with the same blacklists and the
@@ -34,22 +36,33 @@ Google Cloud URL for the hg19 file returns 404; the portal URL works.
 
 ## Filter recipe (ENCODE's)
 
-For every peak file, before anything downstream reads it:
+Never overwrite or replace MACS2's own output files. Leave them as
+MACS2 wrote them and write the filtered peaks beside them under a new,
+readable name. ATAC uses `<PREFIX>_peaks.blacklistFiltered.narrowPeak`
+and `<PREFIX>_summits.blacklistFiltered.bed`. (ENCODE calls these
+`bfilt`; that name was rejected as unreadable.)
 
 ```bash
-bedtools intersect -nonamecheck -v -a RAW.narrowPeak -b $BLACKLIST \
+bedtools intersect -nonamecheck -v \
+    -a <PREFIX>_peaks.narrowPeak -b $BLACKLIST \
   | awk 'BEGIN {OFS = "\t"} {if ($5 > 1000) $5 = 1000; print}' \
-  > OUT.narrowPeak
+  > <PREFIX>_peaks.blacklistFiltered.narrowPeak
+
+awk 'NR == FNR {keep[$4] = 1; next} $4 in keep' \
+    <PREFIX>_peaks.blacklistFiltered.narrowPeak <PREFIX>_summits.bed \
+  > <PREFIX>_summits.blacklistFiltered.bed
 ```
 
 - A peak overlapping the blacklist by 1 bp or more is dropped.
 - Column 5 is capped at 1000 (the narrowPeak/BED limit).
 - ENCODE's third step, keeping only `chr[\dXY]+`, is already done by the
   `<TAG>.genome` allowlist.
-- In ATAC, MACS2 writes to scratch and only the filtered narrowPeak is
-  written to the output directory, so no later step can read the
-  unfiltered file. The summits file is filtered to the peaks kept
-  (match on column 4, the peak name). The `.xls` is copied unfiltered.
+- Both sets are delivered. Every downstream step must select the
+  filtered file by its full name: a glob on `narrowPeak` now matches
+  MACS2's file too. In ATAC, `mergePeaksToSAF.sh` uses
+  `find DIR -name '*_peaks.blacklistFiltered.narrowPeak'` and fails if
+  it finds none, and `pipe.sh` checks that both files exist for every
+  sample.
 - The same applies to broadPeak/gappedPeak if ChIP-seq makes them.
 
 ## If ChIP-seq merges peaks
