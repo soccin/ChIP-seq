@@ -2,7 +2,7 @@
 # Template for an analysis directory on IRIS. Clone the repo into it:
 #
 #   git clone git@github.com:soccin/ChIP-seq.git
-#   (cd ChIP-seq && . 00.SETUP.sh)
+#   ./ChIP-seq/00.SETUP.sh
 #
 # One run per analysis directory.
 #

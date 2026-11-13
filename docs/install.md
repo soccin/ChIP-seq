@@ -4,14 +4,15 @@ IRIS only. What the pipeline needs, and where it comes from.
 
 ## MACS2 (venv)
 
-From the ChIP-seq directory, sourced, not run:
+From the analysis directory, run, not sourced:
 
 ```bash
-. 00.SETUP.sh
+./ChIP-seq/00.SETUP.sh
 ```
 
-Builds `venv/` with the `python3` on PATH (3.10), `numpy==1.23.0` and
-`MACS2==2.2.9.1`.
+Builds `venv/` in the ChIP-seq directory, whatever the current directory,
+with the `python3` on PATH (3.10), `numpy==1.23.0` and `MACS2==2.2.9.1`.
+Stops if `venv/` already exists; remove it to rebuild.
 
 ## Vendored in `bin/`
 

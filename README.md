@@ -15,14 +15,12 @@ what changed in this release.
 
 ### SETUP
 
-Clone into the analysis directory and build the MACS2 venv once (must be
-sourced, not run):
+Clone into the analysis directory and build the MACS2 venv once (run it,
+do not source it):
 
 ```bash
 git clone git@github.com:soccin/ChIP-seq.git
-cd ChIP-seq
-. 00.SETUP.sh
-cd ..
+./ChIP-seq/00.SETUP.sh
 ```
 
 ### Differential Peak Reference
