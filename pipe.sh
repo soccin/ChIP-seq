@@ -73,7 +73,7 @@ source $SDIR/bin/slurmTools.sh
 if [ ! -e "$SDIR/venv" ]; then
     echo
     echo "   Need to install macs2"
-    echo "   Source $SDIR/00.SETUP.sh in $SDIR (see README.md)"
+    echo "   Run $SDIR/00.SETUP.sh (see README.md)"
     echo
     exit 1
 fi

@@ -23,7 +23,7 @@ There is no test suite, linter or CI in this repo (`00.ISSUES.md` #12).
 | Slurm wrappers | `~/bin/sbatch` (exports `SBATCH_SCRIPT_DIR`), `~/bin/bsub` (openlava shim), `~/bin/bSync.sh` | |
 | R | on PATH, packages in `getPackageVersions.R` | 4.5.1 |
 | HOMER | `/usersoftware/core001/common/RHEL_8/homer`, genomes hg19, hg38, mm10 (`CHIP_HOMER_DIR`) | |
-| MACS2 | `venv/`, built by `. 00.SETUP.sh` | 2.2.9.1, numpy 1.23.0 |
+| MACS2 | `venv/`, built by running (not sourcing) `00.SETUP.sh` | 2.2.9.1, numpy 1.23.0 |
 
 Vendored in `bin/`: featureCounts (subread 2.1.1, static, md5
 `0eff90d8e30311160dbddda542f17383`), picard 2.25.5
