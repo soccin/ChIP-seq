@@ -2,15 +2,22 @@
 #
 # postPipe.sh
 #
-# Run from the analysis directory after pipe.sh. Refuses to run unless
-# bin/checkRun.sh says the run worked. Then:
+# Run from the analysis directory after pipe.sh, and again after editing
+# manifest.csv. Refuses to run unless bin/checkRun.sh says the run
+# worked. Then:
 #
 #   - moves out/*.bam, .bai into out/bam/ and out/*.bed.gz into out/bed/
 #     (once; the count checks still find the BAMs there)
-#   - QC stage 1 (qc_ChIPSeq_01.R): peak counts, significant peaks and
-#     volcano plots per MACS call, into out/qc/
-#   - QC stage 2 (qc_ChIPSeq_02.R) if manifest.txt (SampleID<TAB>Group, no
-#     header) exists; otherwise prints the command
+#   - writes manifest.csv if there is none: header MapID,SampleID,Group,
+#     one row per sample of out/pipeline_info/samples.tsv, each sample
+#     its own group. Edit Group (and SampleID, the name in the plots) and
+#     run postPipe.sh again. R/diffAnalysisPairwise.R reads the same file.
+#   - QC stage 1 (qc_ChIPSeq_01.R): peak counts into out/qc/, significant
+#     peaks and volcano plots per MACS call into out/qc/peaks/
+#   - QC stage 2 (qc_ChIPSeq_02.R manifest.csv): fragments in peaks per
+#     sample and a PCA of the peak counts colored by Group, into out/qc/
+#   - 01_POST_DONE: what was done and the next steps (HOMER annotation,
+#     differential analysis)
 #
 # Output is always out/ (pipe.sh -o was removed in v1.0.0), so this takes
 # no arguments.
@@ -29,7 +36,9 @@ function usage {
     echo "version=$SCRIPT_VERSION"
     echo
     echo "    Run from the analysis directory of a completed pipe.sh run."
-    echo "    Output is always out/; there are no arguments."
+    echo "    Output is always out/; there are no arguments. Writes"
+    echo "    manifest.csv (each sample its own group) if there is none;"
+    echo "    edit its Group column and run again to group the PCA."
     echo
     exit 1
 }
@@ -39,6 +48,8 @@ if [ "$#" != "0" ]; then
 fi
 
 ODIR=out
+SAMPLES_TSV=$ODIR/pipeline_info/samples.tsv
+MANIFEST=manifest.csv
 
 if ! $SDIR/bin/checkRun.sh; then
     echo
@@ -47,8 +58,8 @@ if ! $SDIR/bin/checkRun.sh; then
     exit 1
 fi
 
-if [ ! -s out/pipeline_info/samples.tsv ]; then
-    echo "    FATAL ERROR: no out/pipeline_info/samples.tsv"
+if [ ! -s $SAMPLES_TSV ]; then
+    echo "    FATAL ERROR: no $SAMPLES_TSV"
     exit 1
 fi
 
@@ -71,33 +82,59 @@ if [ ! -d "$ODIR/macs" ]; then
     exit 0
 fi
 
-Rscript --no-init-file $SDIR/qc_ChIPSeq_01.R
+#
+# Up to v1.0.0 QC stage 2 read manifest.txt (SampleID<TAB>Group, no
+# header). Its groups would be ignored, so stop until it is converted.
+#
+if [ -e manifest.txt ] && [ ! -e "$MANIFEST" ]; then
+    echo
+    echo "    FATAL ERROR: manifest.txt is no longer read. Write its groups into $MANIFEST:"
+    echo "        a CSV with the header MapID,SampleID,Group and every sample of the run"
+    echo "        (example: $SDIR/assets/manifest_example.csv)"
+    echo
+    exit 1
+fi
 
-mkdir -p $ODIR/qc/peaks
-for PATTERN in "*___sigPeaks*" "*___Volcano*"; do
-    if compgen -G "$PATTERN" >/dev/null; then
-        mv $PATTERN $ODIR/qc/peaks
-    fi
-done
-cp qcChIPSeq_* $ODIR/qc/
+WROTE_MANIFEST=No
+if [ ! -e "$MANIFEST" ]; then
+    awk -F'\t' '
+        NR == 1 { if ($1 != "SAMPLE") exit 1; print "MapID,SampleID,Group"; next }
+        { print $1 "," $1 "," $1 }
+    ' $SAMPLES_TSV >$MANIFEST.tmp \
+        || { echo "    FATAL ERROR: cannot write $MANIFEST from $SAMPLES_TSV"; exit 1; }
+    mv $MANIFEST.tmp $MANIFEST
+    WROTE_MANIFEST=Yes
+    echo
+    echo "    Wrote $MANIFEST: each sample its own group"
+    echo
+fi
 
-date >01_POST_DONE
-cat << EOF | tee -a 01_POST_DONE
+Rscript --no-init-file $SDIR/qc_ChIPSeq_01.R \
+    || { echo "    FATAL ERROR: QC stage 1 (qc_ChIPSeq_01.R) failed"; exit 1; }
 
-Should create a manifest/group file "manifest.txt" for
-stage 2 qc or use _sample_grouping.txt
+Rscript --no-init-file $SDIR/qc_ChIPSeq_02.R $MANIFEST \
+    || { echo "    FATAL ERROR: QC stage 2 (qc_ChIPSeq_02.R $MANIFEST) failed"; exit 1; }
 
-and then run
-    Rscript --no-init-file $SDIR/qc_ChIPSeq_02.R manifest.txt
-    mv qcChIPSeq_*.pdf qcChIPSeq_*.xlsx $ODIR/qc
+{
+date
+cat << EOF
 
+postPipe.sh $SCRIPT_VERSION
+QC reports in $ODIR/qc/; PCA groups from $MANIFEST
 EOF
 
-if [ -e manifest.txt ]; then
-    Rscript --no-init-file $SDIR/qc_ChIPSeq_02.R manifest.txt
-    cp qcChIPSeq_* $ODIR/qc/
+if [ "$WROTE_MANIFEST" == "Yes" ]; then
+cat << EOF
 
-cat << EOF | tee -a 01_POST_DONE
+$MANIFEST was written by this run, with each sample its own group. To
+group samples in the PCA, edit its Group column (SampleID is the name in
+the plots; MapID must stay the sample name) and run postPipe.sh again.
+Groups starting with EXC are left out of the PCA and the differential
+analysis.
+EOF
+fi
+
+cat << EOF
 
 Maybe run HOMER annotation (the genome is taken from 00.RUNSTATUS.txt)
 
@@ -105,6 +142,10 @@ Maybe run HOMER annotation (the genome is taken from 00.RUNSTATUS.txt)
         | xargs -n 1 bsub -o SLURM.HOMER/ -J HOMER -W 59 -n 2 -M 16G \\
             $SDIR/annotateWithHomer.sh
 
-EOF
+Differential analysis, with the groups of $MANIFEST and a comparisons
+file (example: $SDIR/assets/comps_example.csv)
 
-fi
+    Rscript --no-init-file $SDIR/R/diffAnalysisPairwise.R $MANIFEST comps.csv
+
+EOF
+} | tee 01_POST_DONE

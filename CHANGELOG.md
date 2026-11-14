@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- One sample manifest, `manifest.csv` (CSV, header `MapID,SampleID,Group`),
+  for QC stage 2 and `R/diffAnalysisPairwise.R`, read and checked by
+  `read_manifest()` in `tools.R`. QC stage 2 no longer reads
+  `manifest.txt` (`SampleID<TAB>Group`); `postPipe.sh` stops if it finds
+  one without a `manifest.csv`. QC needs every sample of the run in the
+  manifest; MapID and SampleID must be unique.
+- `postPipe.sh` always runs QC stage 2. With no `manifest.csv` it writes
+  one from `out/pipeline_info/samples.tsv`, each sample its own group;
+  edit the groups and run it again. The hint about `_sample_grouping.txt`
+  is gone; `01_POST_DONE` now lists the HOMER and differential analysis
+  commands every time.
+- The QC scripts write into `out/qc/` and `out/qc/peaks/` themselves; no
+  copies are left in the analysis directory (`00.ISSUES.md` #17).
+- QC report names have no trailing underscore:
+  `qcChIPSeq_<Proj>.xlsx` and `qcChIPSeq_<Proj>.pdf` (were
+  `qcChIPSeq_<Proj>_.xlsx` and `qcChIPSeq_<Proj>__.pdf`).
+- QC stage 2 labels samples by the manifest SampleID, skips the PCA when
+  fewer than 2 samples are outside `EXC` groups, and colors more than 25
+  groups.
+
+### Added
+- `assets/manifest_example.csv` and `assets/comps_example.csv`; the
+  `diffAnalysisPairwise.R` usage pointed to example files that did not
+  exist.
+
+### Fixed
+- `diffAnalysisPairwise.R` stopped with "Count matrix validation failed"
+  whenever a Group started with `EXC`: excluded samples were renamed
+  before they were filtered out, so their count columns stayed.
+
 ## [1.0.0] - 2026-11-14
 
 Breaking: Slurm only, counts change, names change. Validated on the
