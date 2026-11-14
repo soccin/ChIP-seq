@@ -1,3 +1,12 @@
+#
+# qc_ChIPSeq_01.R
+#
+# QC stage 1, run by postPipe.sh from the analysis directory. For every
+# MACS call in out/macs: the significant peaks (FDR < 0.05) as an xlsx
+# and a volcano plot, in out/qc/peaks/. The peak and significant-peak
+# counts of all calls go to out/qc/qcChIPSeq_<Proj>.xlsx.
+#
+
 suppressPackageStartupMessages({
 library(tidyverse)
 library(fs)
@@ -9,6 +18,9 @@ SDIR <- commandArgs(trailingOnly = FALSE) |>
 source(file.path(SDIR, "tools.R"))
 
 peakFiles=dir_ls("out/macs",recur=T,regex="peaks.xls$")
+
+PEAK_QC_DIR <- path(QC_DIR, "peaks")
+dir_create(PEAK_QC_DIR)
 
 qCut=0.05
 
@@ -34,12 +46,14 @@ getQCAndWriteSigPeakFile<-function(ff,qCut=0.05) {
         if(numSigPeaks>0) {
             write.xlsx(
                 dp.sig,
-                gsub("_peaks.xls",paste0("___sigPeaks__FDR_",qCut,".xlsx"),pbase)
+                path(PEAK_QC_DIR,
+                     str_replace(pbase,"_peaks.xls$",str_glue("___sigPeaks__FDR_{qCut}.xlsx")))
                 )
         }
 
-        png(gsub("_peaks.xls",paste0("___Volcano__FDR_",qCut,".png"),pbase),type="cairo",
-                units="in", width=8, height=8, pointsize=12, res=150)
+        png(path(PEAK_QC_DIR,
+                 str_replace(pbase,"_peaks.xls$",str_glue("___Volcano__FDR_{qCut}.png"))),
+                type="cairo", units="in", width=8, height=8, pointsize=12, res=150)
 
         numPeaks=nrow(dp)
         numSigPeaks=nrow(dp.sig)
@@ -86,7 +100,7 @@ extract_common_prefix<-function(x) {
 
 }
 
-projNo=get_project_number()
-
-write.xlsx(stats,str_c("qcChIPSeq",projNo,".xlsx",sep="_"))
+xfile <- qc_report_file("xlsx")
+write.xlsx(stats,xfile)
+cat("Wrote", xfile, "\n")
 

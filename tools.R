@@ -24,6 +24,7 @@ CHIP_TOOLS_DIR <- dirname(path_abs(sys.frame(1)$ofile))
 
 RUNSTATUS_FILE <- "00.RUNSTATUS.txt"
 SAMPLES_FILE <- "out/pipeline_info/samples.tsv"
+QC_DIR <- "out/qc"
 
 #
 # Print an error to stderr and exit 1.
@@ -43,6 +44,23 @@ get_project_number <- function() {
         cat("\n\tprojNo =", str_glue("[{projNo}]"), "\n\n")
     }
     projNo
+}
+
+#
+# Join the non-empty parts with "_", so an empty project number or run
+# tag leaves no stray "_" in a file name.
+#
+join_name <- function(...) {
+    parts <- c(...)
+    str_c(parts[parts != ""], collapse = "_")
+}
+
+#
+# The QC report name, out/qc/qcChIPSeq_<Proj>[_<RUNTAG>].<ext>, shared by
+# qc_ChIPSeq_01.R (.xlsx) and qc_ChIPSeq_02.R (.pdf).
+#
+qc_report_file <- function(ext, runtag = "") {
+    path(QC_DIR, str_c(join_name("qcChIPSeq", get_project_number(), runtag), ".", ext))
 }
 
 #
@@ -108,4 +126,63 @@ pbam_to_sample <- function(cols, samples) {
         fatal("count columns not in", SAMPLES_FILE, ":", str_c(cols[is.na(idx)], collapse = " "))
     }
     samples$SAMPLE[idx]
+}
+
+#
+# The sample manifest (manifest.csv), read by qc_ChIPSeq_02.R and
+# R/diffAnalysisPairwise.R. A CSV with a header and the columns MapID,
+# SampleID, Group; other columns are ignored. postPipe.sh writes one
+# with each sample its own group when there is none.
+#
+#   MapID     a sample of the run (samples.tsv SAMPLE, the @RG SM tag),
+#             exactly; unique
+#   SampleID  the name used in plots and tables; unique
+#   Group     not empty; groups starting with EXC are left out of the
+#             PCA and the differential analysis
+#
+# With require_all, every sample of the run must be listed (QC);
+# otherwise samples not listed are left out (differential analysis).
+# Fatal on any violation.
+#
+read_manifest <- function(file, samples, require_all = TRUE) {
+    if (!file_exists(file)) {
+        fatal(str_glue("no manifest [{file}]"))
+    }
+    #
+    # na = "": only an empty field is missing; a name like "NA" is kept
+    #
+    manifest <- read_csv(file, col_types = cols(.default = "c"), na = "",
+                         show_col_types = FALSE)
+
+    missing_cols <- setdiff(c("MapID", "SampleID", "Group"), colnames(manifest))
+    if (length(missing_cols) > 0) {
+        fatal(str_glue("manifest [{file}] has no column {str_c(missing_cols, collapse = ' ')};",
+                       " it must be a CSV with the header MapID,SampleID,Group"))
+    }
+    manifest <- manifest |> select(MapID, SampleID, Group)
+
+    if (anyNA(manifest)) {
+        fatal(str_glue("manifest [{file}] has empty fields"))
+    }
+    for (col in c("MapID", "SampleID")) {
+        dups <- manifest[[col]][duplicated(manifest[[col]])]
+        if (length(dups) > 0) {
+            fatal(str_glue("manifest [{file}] lists {col} more than once: {str_c(unique(dups), collapse = ' ')}"))
+        }
+    }
+
+    not_samples <- setdiff(manifest$MapID, samples$SAMPLE)
+    if (length(not_samples) > 0) {
+        fatal(str_glue("manifest [{file}] MapIDs that are not samples of this run:",
+                       " {str_c(not_samples, collapse = ' ')}; samples: {str_c(samples$SAMPLE, collapse = ' ')}"))
+    }
+    if (require_all) {
+        not_listed <- setdiff(samples$SAMPLE, manifest$MapID)
+        if (length(not_listed) > 0) {
+            fatal(str_glue("manifest [{file}] does not list every sample of the run;",
+                           " missing: {str_c(not_listed, collapse = ' ')}.",
+                           " Use a Group starting with EXC to leave a sample out of the PCA"))
+        }
+    }
+    manifest
 }
