@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-To be released as 1.0.0 once the full-size validation in
-`00.SPEC_v1.0.0.md` passes. Breaking: Slurm only, counts change, names change.
+## [1.0.0] - 2026-11-14
 
-On hold since 2026-10-12: `pipe.sh` is disabled (prints a message and
-exits 1) until that validation is done.
+Breaking: Slurm only, counts change, names change. Validated on the
+full-size Proj_15235_B run against its v0.9.0 baseline (acceptance items
+11 to 14): everything upstream of Count is identical, and the count
+matrix equals a featureCounts 2.0.6 `-p --countReadPairs` recount of the
+baseline BAMs. The walltime rates and stage memory are set from that
+run's `sacct` (`docs/SLURM_PORT.md`).
 
 ### Breaking
 - IRIS/Slurm only. Submit with `sbatch ChIP-seq/pipe.sh`; LSF support
@@ -192,7 +195,8 @@ exits 1) until that validation is done.
 ### Documentation
 - Add featureCounts installation information in docs
 
-[Unreleased]: https://github.com/soccin/ChIP-seq/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/soccin/ChIP-seq/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/soccin/ChIP-seq/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/soccin/ChIP-seq/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/soccin/ChIP-seq/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/soccin/ChIP-seq/compare/v0.7.1...v0.7.2
