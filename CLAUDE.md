@@ -65,10 +65,16 @@ find out/macs | egrep "_peaks.(broad|narrow)Peak$" | xargs -n 1 bsub ... ./ChIP-
 Rscript --no-init-file ChIP-seq/R/diffAnalysisPairwise.R manifest.csv comps.csv [RUNTAG]
 ```
 
-`postPipe.sh` moves BAMs to `out/bam/` and BEDs to `out/bed/`, runs QC
-stage 1, and QC stage 2 if `manifest.txt` (`SampleID<TAB>Group`, no
-header) exists. `annotateWithHomer.sh` and `diffAnalysisPairwise.R` read
-the genome from `00.RUNSTATUS.txt`; they take no genome argument.
+`postPipe.sh` moves BAMs to `out/bam/` and BEDs to `out/bed/`, writes
+`manifest.csv` if there is none (each sample its own group), and runs QC
+stages 1 and 2; the R scripts write straight into `out/qc/`. To group
+the PCA, edit the manifest and run `postPipe.sh` again. The manifest
+(`MapID,SampleID,Group`, header; `read_manifest()` in `tools.R`) is the
+same file for QC stage 2 and `diffAnalysisPairwise.R`; QC needs every
+sample in it, `EXC*` groups are left out of the PCA and the diff. A
+leftover `manifest.txt` (the old QC format) without `manifest.csv`
+stops `postPipe.sh`. `annotateWithHomer.sh` and `diffAnalysisPairwise.R`
+read the genome from `00.RUNSTATUS.txt`; they take no genome argument.
 `deliverResults.sh` is not ported (`POST-IRIS-PORT.md`).
 
 ## Architecture

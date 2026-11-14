@@ -76,3 +76,18 @@ places remain (`00.ISSUES.md` #13).
 `output.pdf` on IRIS (`make -C ChIP-seq/docs`): pandoc 3.6.4 from
 `~/bin`, PDF through the system xelatex, since lualatex (TeX Live 2018)
 fails in microtype.
+
+## Closed after v1.0.0
+
+Numbers below are those of `00.ISSUES.md`.
+
+**#17 `postPipe.sh` output is untidy** (`00.ISSUES.md`) — It printed the
+"Should create a manifest/group file ... or use _sample_grouping.txt"
+hint even when QC stage 2 ran (`_sample_grouping.txt` came from the old
+BIC `results/` folder and does not exist on IRIS), printed the HOMER
+command only when a manifest existed, and copied `qcChIPSeq_*` into
+`out/qc/`, leaving a second copy in the analysis directory. Now
+`postPipe.sh` writes `manifest.csv` (each sample its own group) when
+there is none and always runs QC stage 2; the QC scripts write straight
+into `out/qc/`; `01_POST_DONE` lists the HOMER and differential
+analysis commands every time.

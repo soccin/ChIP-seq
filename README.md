@@ -53,8 +53,34 @@ You need to use a pairing file. If the samples are TARGET only (no control) then
 |   na   | TRGT_1 |
 |   na   | TRGT_2 |
 
-After `postPipe.sh`, HOMER annotation and the differential analysis read
-the genome from the run:
+### Sample groups: `manifest.csv`
+
+`postPipe.sh` makes the QC reports in `out/qc/`. The first time, it also
+writes `manifest.csv` in the analysis directory with each sample its own
+group:
+
+```
+MapID,SampleID,Group
+MUT_D,MUT_D,MUT_D
+MUT_I,MUT_I,MUT_I
+WT_D,WT_D,WT_D
+WT_I,WT_I,WT_I
+```
+
+- `MapID`: the sample name (`@RG SM` tag). Do not change it.
+- `SampleID`: the name shown in plots and tables.
+- `Group`: colors the QC PCA and defines the groups of the differential
+  analysis. Groups starting with `EXC` are left out of both.
+
+Edit `Group` (and `SampleID` if wanted) and run `./ChIP-seq/postPipe.sh`
+again to redo the QC with the groups. QC needs every sample listed. The
+same file is the `MANIFEST` of `diffAnalysisPairwise.R`. Examples:
+`assets/manifest_example.csv`, `assets/comps_example.csv`.
+
+### After postPipe.sh
+
+HOMER annotation and the differential analysis read the genome from the
+run:
 
 ```bash
 find out/macs | egrep "_peaks.(broad|narrow)Peak$" \

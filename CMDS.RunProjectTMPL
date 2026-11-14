@@ -15,8 +15,18 @@ sbatch ./ChIP-seq/pipe.sh \
 
 ./ChIP-seq/postPipe.sh
 
+# postPipe.sh wrote manifest.csv (each sample its own group). Edit its
+# Group column, then run it again to redo the QC PCA with the groups:
+#
+#   ./ChIP-seq/postPipe.sh
+
 find out/macs | egrep "_peaks.(broad|narrow)Peak$" \
     | xargs -n 1 bsub -o SLURM.HOMER/ -J HOMER -W 59 -n 2 -M 16G \
         ./ChIP-seq/annotateWithHomer.sh
+
+# Differential analysis: manifest.csv groups, comps.csv one comparison
+# per line (ChIP-seq/assets/comps_example.csv)
+#
+#   Rscript --no-init-file ChIP-seq/R/diffAnalysisPairwise.R manifest.csv comps.csv
 
 # deliverResults.sh is not ported to IRIS (00.ISSUES.md)

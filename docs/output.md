@@ -35,9 +35,11 @@ Before v1.0.0 (v0.7.0 to v0.9.0) this file counted each read of a pair separatel
 
 _chipSeq/qc_: QC report/plots for ChIP related QC.
 
-- qcChIPSeq_PROJECT-NUM_.xlsx - is a report for the total number of peaks found and the number of significant peaks. Low number of peaks could indicate an issue with the ChIP.
+- qcChIPSeq_PROJECT-NUM.xlsx - is a report for the total number of peaks found and the number of significant peaks. Low number of peaks could indicate an issue with the ChIP.
 
-- qcChIPSeq_PROJECT-NUM_.pdf - plots of the number/percentage of fragments that fall in MACS peaks and a PCA plot of the aggregate peak counts for the samples.
+- qcChIPSeq_PROJECT-NUM.pdf - plots of the number/percentage of fragments that fall in MACS peaks and a PCA plot of the aggregate peak counts for the samples, colored by sample group.
+
+- peaks/ - for each MACS call, the significant peaks (`___sigPeaks__FDR_0.05.xlsx`) and a volcano plot (`___Volcano__FDR_0.05.png`).
 
 _chipSeq/bw_:
 Normalized (to 10million reads) bigwig files for loading IP profiles into IGV [http://software.broadinstitute.org/software/igv/].
