@@ -118,6 +118,7 @@ Found during validation and fixed: `macs2 predictd` exits 0 when it cannot
 build its model, so `makeBigWigFromBEDZ.sh` also requires an estimate in
 the log (test08 had stopped only at `STAGE=FRAGLEN`).
 
-Not done yet (spec section 6): item 11 to 14, the full-size Proj_16852
-rerun (rates, comparison with the 2025 baseline); item 17, b37
+Not done yet (spec section 6): item 11 to 14, the full-size Proj_15235_B
+rerun (rates, comparison with the v0.9.0 JUNO baseline), which replaces
+the Proj_16852 rerun planned at first (`00.ISSUES.md` #15); item 17, b37
 (`00.ISSUES.md` #1).
