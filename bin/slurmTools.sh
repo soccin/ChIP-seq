@@ -6,7 +6,7 @@
 #
 # Jobs are submitted with ~/bin/bsub (the SchedMD openlava shim with local
 # patches: -W in sbatch time format, -M for memory, -o DIR/ for per-job
-# logs) and waited on by job name with ~/bin/bSync.sh.
+# logs) and waited on by job name with ~/bin/bSync.
 #
 # Slurm writes nothing of its own into a job's log, so a job that was
 # OOM-killed, timed out or exited non-zero leaves a log that can look like
@@ -24,20 +24,33 @@ CHIP_START=${CHIP_START:-$(date -d '-1 hour' +%Y-%m-%dT%H:%M:%S)}
 # bSync JOBNAME
 #
 # Block until no job of this user with exactly that name is pending or
-# running. bSync.sh takes a regex, so anchor it: unanchored, JOBNAME would
-# also match JOBNAME<more digits> from a concurrent run.
+# running. The bSync command takes a regex, so anchor it: unanchored,
+# JOBNAME would also match JOBNAME<more digits> from a concurrent run.
+# "command" calls the program on PATH (~/bin/bSync), not this function.
 #
-# bSync.sh runs in the background and is waited on. scancel and the time
-# limit send SIGTERM to the batch shell only, and bash runs a trap only
-# after its foreground child exits, so with bSync.sh in the foreground the
-# caller's trap never ran before the SIGKILL KillWait (30 s) later. The
-# wait builtin returns as soon as a trapped signal arrives. BSYNC_PID lets
-# the trap stop the orphaned bSync.sh.
+# The command runs in the background and is waited on. scancel and the
+# time limit send SIGTERM to the batch shell only, and bash runs a trap
+# only after its foreground child exits, so with the command in the
+# foreground the caller's trap never ran before the SIGKILL KillWait
+# (30 s) later. The wait builtin returns as soon as a trapped signal
+# arrives. BSYNC_PID lets the trap stop the orphaned command.
+#
+# The command exits 1 when a job did not end COMPLETED and 3 when squeue
+# or sacct failed three times. Neither is acted on here: bCheck, called
+# next, reads sacct itself and records which job failed. Only a command
+# that cannot be run (126, 127) stops the caller.
 #
 bSync() {
-    bSync.sh "^$1\$" &
+    local rc=0
+    command bSync "^$1\$" &
     BSYNC_PID=$!
-    wait $BSYNC_PID
+    wait $BSYNC_PID || rc=$?
+    if [ "$rc" == "126" ] || [ "$rc" == "127" ]; then
+        echo
+        echo "    FATAL ERROR: cannot run bSync (rc=$rc); is ~/bin/bSync on PATH?"
+        echo
+        exit 1
+    fi
 }
 
 # sacctByName JOBNAME
@@ -56,13 +69,14 @@ sacctByName() {
 # job with that name ended in a state other than COMPLETED. NJOBS, when
 # given, is the number of jobs submitted under that name.
 #
-# Neither bSync nor sacct is taken at its word. bSync.sh reads a failed
-# squeue call (controller timeout) as "no jobs left" and returns early,
-# so a job sacct still shows as active sends bCheck back into bSync
-# rather than counting as a failure. A failed sacct call, no rows, or
-# fewer rows than NJOBS (accounting lags the queue) is retried every 30 s
-# for up to CHIP_SACCT_WAIT seconds (default 1800) before it is fatal.
-# Only a job in a final state other than COMPLETED fails the stage.
+# Neither bSync nor sacct is taken at its word. The bSync command gives
+# up (exit 3) after three failed squeue or sacct calls and so can return
+# while jobs are still queued; a job sacct still shows as active sends
+# bCheck back into bSync rather than counting as a failure. A failed
+# sacct call, no rows, or fewer rows than NJOBS (accounting lags the
+# queue) is retried every 30 s for up to CHIP_SACCT_WAIT seconds (default
+# 1800) before it is fatal. Only a job in a final state other than
+# COMPLETED fails the stage.
 #
 # Sleeps run in the background and are waited on, as in bSync, so a
 # SIGTERM reaches the caller's trap at once.

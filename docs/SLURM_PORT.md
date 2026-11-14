@@ -14,7 +14,7 @@ line. JUNO is gone; there is no LSF path left (`attic/lsf.sh`,
 | --- | --- | --- |
 | `bsub -o LSF.CTRL/ ./pipe.sh` | `sbatch ./ChIP-seq/pipe.sh` | `~/bin/sbatch`, which exports `SBATCH_SCRIPT_DIR` |
 | `bsub` | `~/bin/bsub` | SchedMD openlava shim with local patches |
-| `bSync NAME` | `bSync.sh "^NAME$"` | `~/bin/bSync.sh`, wrapped in `bin/slurmTools.sh` |
+| `bSync NAME` | `bSync "^NAME$"` | `~/bin/bSync`, wrapped in `bin/slurmTools.sh` |
 | none | `bCheck NAME` (`sacct` State) | `bin/slurmTools.sh` |
 | none | `bCheckAll REGEX` | `bin/slurmTools.sh` |
 
@@ -22,12 +22,12 @@ line. JUNO is gone; there is no LSF path left (`attic/lsf.sh`,
 
 | LSF (v0.9.0) | Slurm (through the shim) | Note |
 | --- | --- | --- |
-| POST `-W 24:00 -R "rusage[mem=24]"` | `-n 2 -M 32G`, class from `runClass` | LSF `-W 24:00` is 24 hours; to `sbatch`/the shim `24:00` would be 24 minutes. 32G gives picard a 23g heap (`bin/picardJvm.sh`); 2 CPUs for its GC threads |
+| POST `-W 24:00 -R "rusage[mem=24]"` | `-n 2 -M 40G`, class from `runClass` | LSF `-W 24:00` is 24 hours; to `sbatch`/the shim `24:00` would be 24 minutes. Picard keeps a 23g heap (`bin/picardJvm.sh`, 40G minus 17G); the other 17G is headroom, since at 32G all four full-size POST jobs reached MaxRSS 32.0 GiB. 2 CPUs for its GC threads |
 | BW `-n 4 -R "rusage[mem=10]"` (40G) | `-n 2 -M 24G` | `sort -S20g` plus predictd |
 | CALLP `-W 359 -n 3 -R "rusage[mem=10]"` | `-n 3 -M 24G` | |
 | MergePeaks `-n 3 -R "rusage[mem=10]"` | `-n 3 -M 24G`, `SHORT` | `sort -S 16g -T $TMPDIR` |
 | Count `-R "rusage[mem=24]" -w "post_done(...)"`, `-T 10` | `-n 8 -M 24G`, threads from the job | `-w` removed: Slurm needs numeric ids, and an `afterok` on a failed parent pends forever. Stages 4 to 6 now run in sequence with `bSync` |
-| none | CountCheck `-n 2 -M 8G` | Check B, one job per sample |
+| none | CountCheck `-n 2 -M 16G` | Check B, one job per sample. Was 8G; the full-size jobs reached MaxRSS 7.3 to 8.0 GiB |
 | DESEQ `-R "rusage[mem=24]"` | `-M 24G`, `SHORT` | |
 
 `-M` is the job's total memory and a hard cgroup cap; LSF `rusage` was per
@@ -41,17 +41,21 @@ whose run time grows with input pick per job with `runClass MIN_PER_GB
 FILE...`; `SHORT` if the estimate is at most 60 min
 (`CHIP_SHORT_MAX_MIN`).
 
-The rates are not yet measured for ChIP-seq. They are ATAC's, raised for
-POST, and are to be replaced from the first full-size run (spec section 6,
-item 11):
+The rates were first ATAC's (POST raised to 12) and were checked against
+`sacct` Elapsed of the full-size Proj_15235_B run (2026-11-13, 4 mm10
+BAMs of 4.3 to 5.2 GB; acceptance item 11). POST and CCHECK were too low
+and were raised; the others were above what the run measured and were
+kept.
 
-| Rate | Initial min/GB | Input | Reasoning |
-| --- | --- | --- | --- |
-| `RATE_POST` | 12 | input BAM | ATAC measured 3.5 to 5.3 for one picard sort; ChIP does two plus fixmate |
-| `RATE_BW` | 30 | `clean.bed.gz` | ATAC's value |
-| `RATE_CALLP` | 10 | target + control BED | ATAC's value |
-| `RATE_COUNT` | 1.2 | all postProcess BAMs | ATAC's featureCounts 1.6.0 value; 2.1.1 is faster |
-| `RATE_CCHECK` | 1.5 | postProcess BAM | ATAC's value |
+| Rate | min/GB | Input | Measured (Proj_15235_B) | Note |
+| --- | --- | --- | --- | --- |
+| `RATE_POST` | 25 (was 12) | input BAM | 17.6 to 20.7 (75 to 100 min) | At 12, two jobs ran SHORT; one ended 19 min before the 1:59 limit |
+| `RATE_BW` | 30 | `clean.bed.gz` | 18.9 to 19.9 (14 to 20 min) | ATAC's value |
+| `RATE_CALLP` | 10 | target + control BED | about 5 (4 to 5 min) | ATAC's value |
+| `RATE_COUNT` | 1.2 | all postProcess BAMs | 0.07 (1 min for 13.6 GB, 8 threads, MaxRSS 14 GiB) | ATAC's value; kept at 8 threads (D14) |
+| `RATE_CCHECK` | 2.5 (was 1.5) | postProcess BAM | 1.75 to 1.97 (5.5 to 7 min) | |
+
+MergePeaks (1 s) and DESEQ (10 s) are always `SHORT`.
 
 ## Run records and checking a run
 
@@ -76,7 +80,7 @@ grep -L "#CHIP_EXIT=0" SLURM.0*/*.out
 | --- | --- | --- |
 | samtools | `module load samtools` (unversioned; missing in the NoPP and SE scripts) | `module load samtools/1.20` in `bin/loadTools.sh`, sourced by every stage script |
 | bedtools | `module load bedtools` | `~/bin/bedtools` 2.31.1; no module exists |
-| picard | `bin/picardV2` loading the first module matching "17" (on IRIS `java/1.7.0_80`), `-Xmx23g`, `TMP_DIR=/scratch/socci` | `bin/picardV2`: `java/23.0.1`, heap from `SLURM_MEM_PER_NODE` minus 9G (`bin/picardJvm.sh`, from PEMapper), `TMP_DIR=$TMPDIR`; still picard 2.25.5 |
+| picard | `bin/picardV2` loading the first module matching "17" (on IRIS `java/1.7.0_80`), `-Xmx23g`, `TMP_DIR=/scratch/socci` | `bin/picardV2`: `java/23.0.1`, heap from `SLURM_MEM_PER_NODE` minus 17G (`bin/picardJvm.sh`, from PEMapper, which uses 9G), `TMP_DIR=$TMPDIR`; still picard 2.25.5 |
 | POST scratch | relative `_scratch_ChIPSeq/<uuid>`, never removed | `${CHIP_SCRATCH_ROOT:-/scratch/core001/bic/$USER/ChIPSeq}/<uuid>`, removed on exit |
 | TMPDIR | node `/tmp`; MACS `/fscratch/socci` | per job under `${CHIP_LOCAL_TMP:-/localscratch/$USER}` (`bin/runStage.sh`) |
 | venv | python 3.10.2 on `/juno` | `python3` on PATH (3.10.14), `numpy==1.23.0`, `MACS2==2.2.9.1` (`00.SETUP.sh`) |
@@ -118,6 +122,23 @@ Found during validation and fixed: `macs2 predictd` exits 0 when it cannot
 build its model, so `makeBigWigFromBEDZ.sh` also requires an estimate in
 the log (test08 had stopped only at `STAGE=FRAGLEN`).
 
-Not done yet (spec section 6): item 11 to 14, the full-size Proj_16852
-rerun (rates, comparison with the 2025 baseline); item 17, b37
-(`00.ISSUES.md` #1).
+### Full-size run: Proj_15235_B (items 11 to 14)
+
+Done 2026-11-13 on `chore/resume` (`v0.9.0-27-geffcb97`), in
+`Proj_15235_B/ChIP_IRIS/`: the 4 `Map/out___M/*/*___MD.bam` (19.3 GB),
+the baseline's `pairing.txt` (`na` controls), default options (broad,
+proper pairs). Baseline: `Proj_15235_B/ChIP/out`, v0.9.0 on JUNO,
+2026-07-19. It replaces the Proj_16852 rerun planned at first; a fuller
+test on Proj_16852 is `00.ISSUES.md` #15. The comparison scripts are in
+`ChIP_IRIS/validate/` (`item12_upstream.sh`, `item13_recount.sh`,
+`compareCounts.R`, `item14_postPipe.sh`), with their reports beside
+them.
+
+| Item | Result |
+| --- | --- |
+| 11 completes | Control job 10749750 `COMPLETED` in 2 h 18 min; 19 of 19 stage jobs `COMPLETED`, no `TIMEOUT` or `OUT_OF_MEMORY`; `checkRun.sh` OK; `FRAGLEN=175`. Rates and memory set from `sacct` (tables above) |
+| 12 upstream | Identical for all 4 samples: `idxstats` read counts and `@SQ` lines of the postProcess BAMs, uncompressed `clean.bed.gz` (md5), bigWigs (byte for byte), predictd lengths (167, 170, 180, 183) and model files, MACS `broadPeak`, `gappedPeak` and `xls` after renaming `<S>___MD` to `<S>`. `FRAGLEN` 175 equals the baseline's `--extsize`; `macsPairs.txt` and `macsPeaksMerged.saf` (121,100 peaks) identical |
+| 13 counts | featureCounts 2.0.6 `-O -Q 10 -p --countReadPairs` on the baseline BAMs and SAF equals the run's 2.1.1 matrix in all 4 x 121,100 cells and in the `.summary`; DESeq2 scale factors recomputed from it equal the run's to 15 digits. Checks A (ratio 1.0000) and B (diff 0) pass for all 4. The v0.9.0 matrix is about twice this one (reads, not fragments): these are the corrected counts for Proj_15235_B |
+| 14 postPipe | Exit 0 with the project's `manifest.txt`; QC xlsx and a 4-page PDF (fragments in peaks, fraction, two PCA plots) in `out/qc/`; `___sigPeaks` and `___Volcano` in `out/qc/peaks/` |
+
+Not done (spec section 6): item 17, b37 (`00.ISSUES.md` #1).

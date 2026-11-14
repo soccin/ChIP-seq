@@ -39,22 +39,6 @@
 #SBATCH -J CTRL.ChIP
 #SBATCH -o SLURM.CTRL/%j.out
 
-# ON HOLD (2026-10-12): the IRIS port is not finished. Delete this block
-# to resume; see 00.SPEC_v1.0.0.md section 0.
-cat >&2 <<'EOF'
-
-    FATAL ERROR: ChIP-seq pipeline ON HOLD
-
-    The port to IRIS/Slurm is not finished.
-    Do NOT USE THIS PIPELINE until it is.
-
-    Do not fall back to v0.9.0 or earlier: from v0.7.0 their count
-    matrix holds reads, not fragments (CHANGELOG.md).
-
-EOF
-exit 1
-# END ON HOLD
-
 set -eu
 
 SDIR=${SBATCH_SCRIPT_DIR:-$( cd "$( dirname "$0" )" && pwd )}
@@ -672,16 +656,17 @@ SHORT_W=1:59:00
 LONG_W=12:00:00
 
 #
-# Minutes per GB of input. Not yet measured for ChIP-seq: these are the
-# ATAC-seq rates, raised for POST (two picard sorts plus fixmate), and
-# are to be replaced by sacct Elapsed from the first full-size run. See
+# Minutes per GB of input. POST and CCHECK are set from the sacct Elapsed
+# of the full-size Proj_15235_B run (2026-11-13; measured 17.6 to 20.7
+# and 1.75 to 1.97); BW, CALLP and COUNT keep the ATAC-seq values, which
+# were above what that run measured (19, 5 and 0.07). See
 # docs/SLURM_PORT.md.
 #
-RATE_POST=12       # input BAM
+RATE_POST=25       # input BAM
 RATE_BW=30         # clean.bed.gz
 RATE_CALLP=10      # target + control clean.bed.gz
 RATE_COUNT=1.2     # all postProcess BAMs, summed
-RATE_CCHECK=1.5    # postProcess BAM
+RATE_CCHECK=2.5    # postProcess BAM
 
 #
 # A job is SHORT if its estimated run time is at most SHORT_MAX_MIN, half
@@ -860,7 +845,7 @@ setStage SUBMIT
 for S in $SAMPLES; do
     BAM=$(sampleBAM $S)
     CLASS=$(runClass $RATE_POST $BAM) || fatal "cannot size [$BAM]"
-    chipSub POST $S SLURM.01.POST $CLASS "-n 2 -M 32G" \
+    chipSub POST $S SLURM.01.POST $CLASS "-n 2 -M 40G" \
         $SDIR/$POST_SCRIPT $GENOME $S $BAM
 done
 
@@ -998,7 +983,7 @@ chipSub Count all SLURM.05.COUNT $CLASS "-n 8 -M 24G" \
 for S in $SAMPLES; do
     PBAM=out/${S}_postProcess.bam
     CLASS=$(runClass $RATE_CCHECK $PBAM) || fatal "cannot size [$PBAM]"
-    chipSub CountCheck $S SLURM.05b.CHECK $CLASS "-n 2 -M 8G" \
+    chipSub CountCheck $S SLURM.05b.CHECK $CLASS "-n 2 -M 16G" \
         $SDIR/bin/assignedCheck.sh $PBAM $SAF out/${S}_postProcess.atlasFragments.txt
 done
 

@@ -20,7 +20,7 @@ There is no test suite, linter or CI in this repo (`00.ISSUES.md` #12).
 | samtools | `module load samtools/1.20` (`bin/loadTools.sh`) | 1.20 |
 | bedtools | `~/bin/bedtools` on PATH (no module exists) | 2.31.1 |
 | Java | `module load java/23.0.1` (`bin/picardV2`) | 23.0.1 |
-| Slurm wrappers | `~/bin/sbatch` (exports `SBATCH_SCRIPT_DIR`), `~/bin/bsub` (openlava shim), `~/bin/bSync.sh` | |
+| Slurm wrappers | `~/bin/sbatch` (exports `SBATCH_SCRIPT_DIR`), `~/bin/bsub` (openlava shim), `~/bin/bSync` | |
 | R | on PATH, packages in `getPackageVersions.R` | 4.5.1 |
 | HOMER | `/usersoftware/core001/common/RHEL_8/homer`, genomes hg19, hg38, mm10 (`CHIP_HOMER_DIR`) | |
 | MACS2 | `venv/`, built by running (not sourcing) `00.SETUP.sh` | 2.2.9.1, numpy 1.23.0 |
@@ -211,7 +211,9 @@ exist:
   moved to `out/bam/`. Diff again when ATAC releases v2.0.0 and offer
   these back. `bin/getGenomeBuildBAM.sh` went the other way: ATAC-seq
   took this repo's copy.
-- `bin/picardJvm.sh` is PEMapper's (v_4.1.0) with `PEMAP_` renamed `CHIP_`.
+- `bin/picardJvm.sh` is PEMapper's (v_4.1.0) with `PEMAP_` renamed `CHIP_`
+  and a larger margin (17408 MB, not 9216), so POST's 40G still gives a
+  23g heap.
 - Version lives in five places that must move together: `README.md`,
   `VERSION.md`, `CHANGELOG.md` (entry and compare links), `docs/output.md`
   and the `cat()` banner in `getPackageVersions.R`. `pipe.sh` reports
