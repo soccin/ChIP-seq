@@ -211,7 +211,9 @@ exist:
   moved to `out/bam/`. Diff again when ATAC releases v2.0.0 and offer
   these back. `bin/getGenomeBuildBAM.sh` went the other way: ATAC-seq
   took this repo's copy.
-- `bin/picardJvm.sh` is PEMapper's (v_4.1.0) with `PEMAP_` renamed `CHIP_`.
+- `bin/picardJvm.sh` is PEMapper's (v_4.1.0) with `PEMAP_` renamed `CHIP_`
+  and a larger margin (17408 MB, not 9216), so POST's 40G still gives a
+  23g heap.
 - Version lives in five places that must move together: `README.md`,
   `VERSION.md`, `CHANGELOG.md` (entry and compare links), `docs/output.md`
   and the `cat()` banner in `getPackageVersions.R`. `pipe.sh` reports

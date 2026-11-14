@@ -16,13 +16,16 @@
 # buffers, GC bookkeeping -- and the page cache picard's own writes push
 # into the same cgroup.
 #
-# The margin is fixed rather than proportional so that 32G gives back the
-# historical -Xmx23g exactly: 32768 - 9216 = 23552. Unset, as when
-# picardV2 is run by hand, falls back to that same 23g. Java's own cgroup
-# awareness is no substitute: left to itself it takes 25% of the cap.
+# The margin is fixed rather than proportional so that POST's 40G gives
+# back the historical -Xmx23g exactly: 40960 - 17408 = 23552. Unset, as
+# when picardV2 is run by hand, falls back to that same 23g. Java's own
+# cgroup awareness is no substitute: left to itself it takes 25% of the
+# cap. PEMapper's margin is 9216; this one is larger because all four
+# POST jobs of the full-size Proj_15235_B run reached MaxRSS 32.0 GiB at
+# 32G with a 23g heap (2026-11-13), so the extra 8G is headroom, not heap.
 #
 CHIP_XMX_MB=23552
-CHIP_JVM_HEADROOM_MB=${CHIP_JVM_HEADROOM_MB:-9216}
+CHIP_JVM_HEADROOM_MB=${CHIP_JVM_HEADROOM_MB:-17408}
 
 if [ -n "${SLURM_MEM_PER_NODE:-}" ]; then
     CHIP_XMX_MB=$(( SLURM_MEM_PER_NODE - CHIP_JVM_HEADROOM_MB ))
