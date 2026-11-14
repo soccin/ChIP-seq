@@ -14,7 +14,7 @@ line. JUNO is gone; there is no LSF path left (`attic/lsf.sh`,
 | --- | --- | --- |
 | `bsub -o LSF.CTRL/ ./pipe.sh` | `sbatch ./ChIP-seq/pipe.sh` | `~/bin/sbatch`, which exports `SBATCH_SCRIPT_DIR` |
 | `bsub` | `~/bin/bsub` | SchedMD openlava shim with local patches |
-| `bSync NAME` | `bSync.sh "^NAME$"` | `~/bin/bSync.sh`, wrapped in `bin/slurmTools.sh` |
+| `bSync NAME` | `bSync "^NAME$"` | `~/bin/bSync`, wrapped in `bin/slurmTools.sh` |
 | none | `bCheck NAME` (`sacct` State) | `bin/slurmTools.sh` |
 | none | `bCheckAll REGEX` | `bin/slurmTools.sh` |
 

@@ -20,7 +20,7 @@ There is no test suite, linter or CI in this repo (`00.ISSUES.md` #12).
 | samtools | `module load samtools/1.20` (`bin/loadTools.sh`) | 1.20 |
 | bedtools | `~/bin/bedtools` on PATH (no module exists) | 2.31.1 |
 | Java | `module load java/23.0.1` (`bin/picardV2`) | 23.0.1 |
-| Slurm wrappers | `~/bin/sbatch` (exports `SBATCH_SCRIPT_DIR`), `~/bin/bsub` (openlava shim), `~/bin/bSync.sh` | |
+| Slurm wrappers | `~/bin/sbatch` (exports `SBATCH_SCRIPT_DIR`), `~/bin/bsub` (openlava shim), `~/bin/bSync` | |
 | R | on PATH, packages in `getPackageVersions.R` | 4.5.1 |
 | HOMER | `/usersoftware/core001/common/RHEL_8/homer`, genomes hg19, hg38, mm10 (`CHIP_HOMER_DIR`) | |
 | MACS2 | `venv/`, built by running (not sourcing) `00.SETUP.sh` | 2.2.9.1, numpy 1.23.0 |

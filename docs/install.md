@@ -28,7 +28,7 @@ Stops if `venv/` already exists; remove it to rebuild.
 
 - samtools 1.20: `module load samtools/1.20` (`bin/loadTools.sh`)
 - bedtools 2.31.1: `~/bin/bedtools` on PATH; there is no module
-- `~/bin/sbatch`, `~/bin/bsub`, `~/bin/bSync.sh`: the Slurm wrappers
+- `~/bin/sbatch`, `~/bin/bsub`, `~/bin/bSync`: the Slurm wrappers
 - R 4.5.1 on PATH with the packages in `getPackageVersions.R`
 - HOMER at `/usersoftware/core001/common/RHEL_8/homer` with the `hg19`,
   `hg38` and `mm10` genome packages (`annotateWithHomer.sh`;
