@@ -122,7 +122,23 @@ Found during validation and fixed: `macs2 predictd` exits 0 when it cannot
 build its model, so `makeBigWigFromBEDZ.sh` also requires an estimate in
 the log (test08 had stopped only at `STAGE=FRAGLEN`).
 
-Not done yet (spec section 6): item 11 to 14, the full-size Proj_15235_B
-rerun (rates, comparison with the v0.9.0 JUNO baseline), which replaces
-the Proj_16852 rerun planned at first (`00.ISSUES.md` #15); item 17, b37
-(`00.ISSUES.md` #1).
+### Full-size run: Proj_15235_B (items 11 to 14)
+
+Done 2026-11-13 on `chore/resume` (`v0.9.0-27-geffcb97`), in
+`Proj_15235_B/ChIP_IRIS/`: the 4 `Map/out___M/*/*___MD.bam` (19.3 GB),
+the baseline's `pairing.txt` (`na` controls), default options (broad,
+proper pairs). Baseline: `Proj_15235_B/ChIP/out`, v0.9.0 on JUNO,
+2026-07-19. It replaces the Proj_16852 rerun planned at first; a fuller
+test on Proj_16852 is `00.ISSUES.md` #15. The comparison scripts are in
+`ChIP_IRIS/validate/` (`item12_upstream.sh`, `item13_recount.sh`,
+`compareCounts.R`, `item14_postPipe.sh`), with their reports beside
+them.
+
+| Item | Result |
+| --- | --- |
+| 11 completes | Control job 10749750 `COMPLETED` in 2 h 18 min; 19 of 19 stage jobs `COMPLETED`, no `TIMEOUT` or `OUT_OF_MEMORY`; `checkRun.sh` OK; `FRAGLEN=175`. Rates and memory set from `sacct` (tables above) |
+| 12 upstream | Identical for all 4 samples: `idxstats` read counts and `@SQ` lines of the postProcess BAMs, uncompressed `clean.bed.gz` (md5), bigWigs (byte for byte), predictd lengths (167, 170, 180, 183) and model files, MACS `broadPeak`, `gappedPeak` and `xls` after renaming `<S>___MD` to `<S>`. `FRAGLEN` 175 equals the baseline's `--extsize`; `macsPairs.txt` and `macsPeaksMerged.saf` (121,100 peaks) identical |
+| 13 counts | featureCounts 2.0.6 `-O -Q 10 -p --countReadPairs` on the baseline BAMs and SAF equals the run's 2.1.1 matrix in all 4 x 121,100 cells and in the `.summary`; DESeq2 scale factors recomputed from it equal the run's to 15 digits. Checks A (ratio 1.0000) and B (diff 0) pass for all 4. The v0.9.0 matrix is about twice this one (reads, not fragments): these are the corrected counts for Proj_15235_B |
+| 14 postPipe | Exit 0 with the project's `manifest.txt`; QC xlsx and a 4-page PDF (fragments in peaks, fraction, two PCA plots) in `out/qc/`; `___sigPeaks` and `___Volcano` in `out/qc/peaks/` |
+
+Not done (spec section 6): item 17, b37 (`00.ISSUES.md` #1).
