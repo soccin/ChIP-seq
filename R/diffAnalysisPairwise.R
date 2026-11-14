@@ -26,18 +26,22 @@ OUTPUT FILES:
 --------------------------------------------------------------------------------
 MANIFEST FILE FORMAT (with header):
   Three columns: MapID, SampleID, Group
+  The same file as QC stage 2: postPipe.sh writes manifest.csv with each
+  sample its own group; set the groups there.
   MapID must equal a sample name of the run (its @RG SM tag, as in
   out/pipeline_info/samples.tsv) exactly. SampleID is the name used in
-  the output. Samples of the run not in the manifest are left out.
+  the output. Samples of the run not in the manifest, and samples whose
+  Group starts with EXC, are left out.
 
   Example:
     MapID,SampleID,Group
-    761-wt,761-wt,wt
-    810-wt,810-wt,wt
-    876-ko,876-ko,ko
-    978-ko,978-ko,ko
+    s_761_wt,761-wt,wt
+    s_810_wt,810-wt,wt
+    s_876_ko,876-ko,ko
+    s_978_ko,978-ko,ko
+    s_990_ko,990-ko,EXC_lowDepth
 
-  See example: R/sampleManifest.csv
+  See example: ChIP-seq/assets/manifest_example.csv
 
 --------------------------------------------------------------------------------
 COMPARISONS FILE FORMAT (NO header):
@@ -52,7 +56,7 @@ COMPARISONS FILE FORMAT (NO header):
   Positive logFC means higher in Group2 (ko)
   Negative logFC means higher in Group1 (wt)
 
-  See example: R/comparisions.csv
+  See example: ChIP-seq/assets/comps_example.csv
 
 --------------------------------------------------------------------------------
 EXAMPLE USAGE:
@@ -152,24 +156,22 @@ for (pkg in c(txdb_pkg, annoDb)) {
 txdb <- getExportedValue(txdb_pkg, txdb_pkg)
 cat("GENOME =", GENOME, " TxDb =", txdb_pkg, " OrgDb =", annoDb, "\n")
 
-# Load sample manifest and create renaming lookup. MapID must equal a
-# sample of the run exactly.
+# Load sample manifest (read_manifest in tools.R checks it; MapID must
+# equal a sample of the run exactly) and create renaming lookup.
 samples <- read_samples()
-manifest <- read_csv(MANIFEST_FILE, show_col_types = FALSE) |> arrange(SampleID)
+manifest <- read_manifest(MANIFEST_FILE, samples, require_all = FALSE) |>
+  arrange(SampleID)
 
-not_samples <- setdiff(manifest$MapID, samples$SAMPLE)
-if (length(not_samples) > 0) {
-  fatal("manifest MapIDs that are not samples of this run:",
-        str_c(not_samples, collapse = " "),
-        "; samples:", str_c(samples$SAMPLE, collapse = " "))
-}
+# Remove excluded samples before the lookup, so their count columns are
+# dropped with the samples not in the manifest
+manifest <- manifest |> filter(!str_detect(Group, "^EXC"))
 
 sampRename <- manifest$SampleID
 names(sampRename) <- manifest$MapID
 
 #' Sample names for count columns: the postProcess BAM path to the
 #' sample (samples.tsv), then MapID to SampleID. NA for a sample of the
-#' run that is not in the manifest.
+#' run that is not in the manifest or is in an EXC group.
 #'
 #' @param cols Character vector of count column names (BAM paths)
 #' @return Character vector of manifest SampleIDs
@@ -195,9 +197,6 @@ raw_counts <- read_tsv(str_remove(peak_counts_file, ".summary$"),
 peak.annote <- raw_counts |>
   select(PeakNo = Geneid, Chr, Start, End, Strand, Length)
 
-# Remove excluded samples from manifest
-manifest <- manifest |> filter(!str_detect(Group, "^EXC"))
-
 # Create count matrix for edgeR
 count_matrix <- raw_counts |>
   select(PeakNo = Geneid, all_of(samples$PBAM)) |>
@@ -206,7 +205,7 @@ count_matrix <- raw_counts |>
 
 colnames(count_matrix) <- fix_sample_names(colnames(count_matrix))
 
-# Remove columns of samples that are not in the manifest
+# Remove columns of samples that are not in the manifest or are excluded
 count_matrix <- count_matrix[, !is.na(colnames(count_matrix))]
 
 # Validate all count matrix columns are in manifest
