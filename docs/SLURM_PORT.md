@@ -92,7 +92,8 @@ grep -L "#CHIP_EXIT=0" SLURM.0*/*.out
 
 Done 2026-10-11 on `feat/iris-port` (uncommitted, so the runs report
 `v0.9.0-1-ge3d7535-dirty`), against `attic/00.SPEC_v1.0.0.md` section 6. Test
-directories, inputs and scripts are in `PortATACseq/PortChIPseq/`. The
+directories, inputs and scripts were in `PortATACseq/PortChIPseq/`, since
+removed. The
 downsampled set is the 8 Proj_16852 mm10 Cut&Run BAMs at 1/20
 (`Ports/PEMapper/bin/downsampleBam.sh -s 20`, 0.23 to 0.35 GB each) in
 `inputs/out/picard/DSB/`; GRCh38 BAMs are ATAC-seq's

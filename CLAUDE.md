@@ -7,9 +7,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 IRIS (MSKCC, Slurm) only. The JUNO/LSF path was removed in v1.0.0; nothing
 here runs on a laptop. On IRIS the pipeline can be run and tested directly:
 `bash -n` and `Rscript --no-init-file -e 'parse(file=...)'` for syntax, the
-helper scripts by hand, and test runs with `sbatch` in a fresh directory
-(the v1.0.0 test directories are `PortATACseq/PortChIPseq/test*`, inputs in
-`PortChIPseq/inputs/`, test scripts in `PortChIPseq/scripts/`).
+helper scripts by hand, and test runs with `sbatch` in a fresh directory.
+The downsampled v1.0.0 test directories (`PortATACseq/PortChIPseq/`) were
+removed. The full-size acceptance run and its comparison scripts are in
+`/data1/core001/work/bic/socci/Users/KentsisA/YamadaM/Proj_15235_B/ChIP_IRIS/`
+(`validate/`).
 
 There is no test suite, linter or CI in this repo (`00.ISSUES.md` #12).
 
@@ -54,11 +56,6 @@ removed because the QC and differential scripts and the run records all
 assume it (`00.ISSUES.md` #4).
 
 ## Running
-
-On hold since 2026-10-12: `pipe.sh` exits 1 at once with a "do NOT use
-this pipeline" message (block marked `ON HOLD` after the `#SBATCH`
-lines). To test or resume, delete that block on a branch first; see
-`00.SPEC_v1.0.0.md` section 0.
 
 ```bash
 sbatch ./ChIP-seq/pipe.sh --pairing-file PAIRS BAM1 [BAM2 ...]
