@@ -34,7 +34,7 @@ packages <- c(
   'TxDb.Mmusculus.UCSC.mm10.knownGene'
 )
 
-cat("# R Package Requirements for ChIP-seq Pipeline v0.9.0\n")
+cat("# R Package Requirements for ChIP-seq Pipeline v1.0.0\n")
 cat("# Generated:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
 cat("# R Version:", R.version.string, "\n\n")
 
