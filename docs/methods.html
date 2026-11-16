@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ChIP-Seq pipeline methods</title>
+  <style>
+html {
+color: #1a1a1a;
+background-color: #fdfdfd;
+}
+body {
+margin: 0 auto;
+max-width: 36em;
+padding-left: 50px;
+padding-right: 50px;
+padding-top: 50px;
+padding-bottom: 50px;
+hyphens: auto;
+overflow-wrap: break-word;
+text-rendering: optimizeLegibility;
+font-kerning: normal;
+}
+@media (max-width: 600px) {
+body {
+font-size: 0.9em;
+padding: 12px;
+}
+h1 {
+font-size: 1.8em;
+}
+}
+@media print {
+html {
+background-color: white;
+}
+body {
+background-color: transparent;
+color: black;
+font-size: 12pt;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3, h4 {
+page-break-after: avoid;
+}
+}
+p {
+margin: 1em 0;
+}
+a {
+color: #1a1a1a;
+}
+a:visited {
+color: #1a1a1a;
+}
+img {
+max-width: 100%;
+}
+svg {
+height: auto;
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+margin-top: 1.4em;
+}
+h5, h6 {
+font-size: 1em;
+font-style: italic;
+}
+h6 {
+font-weight: normal;
+}
+ol, ul {
+padding-left: 1.7em;
+margin-top: 1em;
+}
+li > ol, li > ul {
+margin-top: 0;
+}
+blockquote {
+margin: 1em 0 1em 1.7em;
+padding-left: 1em;
+border-left: 2px solid #e6e6e6;
+color: #606060;
+}
+code {
+font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+font-size: 85%;
+margin: 0;
+hyphens: manual;
+}
+pre {
+margin: 1em 0;
+overflow: auto;
+}
+pre code {
+padding: 0;
+overflow: visible;
+overflow-wrap: normal;
+}
+.sourceCode {
+background-color: transparent;
+overflow: visible;
+}
+hr {
+border: none;
+border-top: 1px solid #1a1a1a;
+height: 1px;
+margin: 1em 0;
+}
+table {
+margin: 1em 0;
+border-collapse: collapse;
+width: 100%;
+overflow-x: auto;
+display: block;
+font-variant-numeric: lining-nums tabular-nums;
+}
+table caption {
+margin-bottom: 0.75em;
+}
+tbody {
+margin-top: 0.5em;
+border-top: 1px solid #1a1a1a;
+border-bottom: 1px solid #1a1a1a;
+}
+th {
+border-top: 1px solid #1a1a1a;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+td {
+padding: 0.125em 0.5em 0.25em 0.5em;
+}
+header {
+margin-bottom: 4em;
+text-align: center;
+}
+#TOC li {
+list-style: none;
+}
+#TOC ul {
+padding-left: 1.3em;
+}
+#TOC > ul {
+padding-left: 0;
+}
+#TOC a:not(:hover) {
+text-decoration: none;
+}
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+</head>
+<body>
+<h1 id="chip-seq-pipeline">ChIP-seq Pipeline</h1>
+<h3 id="version-1.0.0">Version 1.0.0</h3>
+<h2 id="overview">Overview</h2>
+<p>Samples were processed with the BIC ChIP-seq pipeline, which takes
+aligned, duplicate-marked BAM files and produces filtered alignments,
+normalized signal tracks (bigWig), MACS2 peak calls for each target
+sample (against its control when there is one), a merged peak set with a
+raw fragment count matrix, QC reports and, when requested, an annotation
+of the peaks and a differential binding analysis. The code is at <a href="https://github.com/soccin/ChIP-seq/releases/tag/v1.0.0">https://github.com/soccin/ChIP-seq/releases/tag/v1.0.0</a>.</p>
+<p>Read filtering and peak calling follow the ENCODE 3 ChIP-seq pipeline
+(ENCODE-DCC/chip-seq-pipeline, <code>filter_qc.py</code> and
+<code>macs2.py</code>) with the differences described below: where
+duplicates are marked, the removal of supplementary alignments, the
+contigs that are kept, how the fragment length is estimated, and the
+duplicate setting of MACS2. The pipeline does not filter peaks against
+the ENCODE blacklist and does not run ENCODE’s replicate analysis (IDR,
+pooled and pseudo-replicate peaks). The signal tracks, the merged peak
+set and the count normalization follow the methods of R. Koche (MSKCC
+Center for Epigenetics Research).</p>
+<p>Reads were aligned to one of three reference genomes: GRCh37 (b37),
+GRCh38 (the GDC <code>GRCh38.d1.vd1</code> build, hg38) or GRCm38
+(mm10). The build of a project is recorded in the BAM headers and in
+<code>pipeline_info/cmd.sh.log</code>, which also holds the options of
+the run (peak type, proper pairs, single-end, fragment length). Peaks,
+signal tracks and counts use the autosomes, X and Y only.</p>
+<h2 id="methods">Methods</h2>
+<p><strong>Alignment.</strong> Reads were aligned with BWA-MEM 0.7.19
+(Li 2013) using the PEMapper pipeline (<a href="https://github.com/soccin/PEMapper">https://github.com/soccin/PEMapper</a>),
+which trims adapters, aligns with <code>bwa mem -M</code>, merges lanes,
+sorts, and marks duplicates with Picard MarkDuplicates. Duplicates are
+marked in the BAM, not removed. The PEMapper and BWA versions are in the
+<code>@PG</code> header lines of each BAM.</p>
+<p><strong>Read filtering.</strong> With samtools 1.20 (Danecek 2021)
+each BAM was reduced to properly paired reads with mapping quality 30 or
+more, without unmapped reads, reads whose mate is unmapped, secondary
+and supplementary alignments, reads failing vendor QC or duplicates
+(<code>-q 30 -f 2 -F 3852</code>), on the autosomes, X and Y. The reads
+were then name-sorted and passed through
+<code>samtools fixmate -r</code>, and the flag filter was applied again
+(<code>-f 2 -F 1804</code>), as in the ENCODE pipeline, which removes a
+read whose mate did not pass the filters above. The result was
+coordinate-sorted with Picard SortSam 2.25.5; this filtered BAM is the
+input to every later step. Three points differ from ENCODE. The
+duplicates removed here were marked by PEMapper on all alignments,
+before this filter; ENCODE marks duplicates after its own filter.
+Supplementary alignments are removed (flag 2048), which ENCODE’s flag
+1804 does not include. Reads on the mitochondrial contig and on
+unplaced, random, decoy and viral contigs are removed at this step, so
+they are not part of the read totals MACS2 uses; ENCODE’s ChIP-seq
+pipeline keeps them through peak calling. When a run is made without the
+proper pair requirement (<code>PROPER_PAIR: No</code>, for samples where
+rearrangements matter) the <code>-f 2</code> condition is dropped and
+both reads of a pair still have to be mapped; for single-end data
+(<code>SE: Yes</code>) there are no mate conditions and no fixmate
+step.</p>
+<p><strong>Signal tracks.</strong> Each read of the filtered BAM was
+converted to a BED interval with bedtools 2.31.1 (Quinlan 2010). For
+each sample the coverage of these intervals was computed with bedtools
+genomecov, each read as its own interval with no extension, scaled to 10
+million reads (the scale factor is 10 million divided by the number of
+filtered reads of the sample), and written as a bigWig with the UCSC
+wigToBigWig tool (Kent 2010). Tracks are therefore comparable between
+samples by sequencing depth; the DESeq2 scale factors below are not
+applied to them.</p>
+<p><strong>Fragment length.</strong> The fragment length of each sample
+was estimated from its filtered reads with <code>macs2 predictd</code>,
+and the median over the samples of the run (rounded down) was used as
+the one fragment length of every peak call. ENCODE instead takes the
+fragment length of each experiment from a strand cross-correlation
+analysis. A run stops if predictd gives no estimate for a sample.</p>
+<p><strong>Peak calling.</strong> Peaks were called with MACS2 2.2.9.1
+(Zhang 2008) from the BED intervals of the reads, once for each target
+sample, against its control sample (input or IgG) when the experiment
+has one and without a control otherwise. Both reads of a pair are used
+as separate reads. The settings are those of the ENCODE pipeline:
+<code>-p 0.01 --nomodel --shift 0 --extsize &lt;fragment length&gt;</code>
+and the genome size <code>hs</code> or <code>mm</code>, with
+<code>--broad</code> for broad peaks (the default; histone marks and
+other broad binding) and without it for narrow peaks (transcription
+factors and other focal binding). The peak type is one choice for the
+whole run. Each read is extended to the fragment length from its 5’ end,
+and peaks are called at a p-value of 0.01, a permissive cutoff chosen by
+ENCODE so that peaks can be ranked downstream. One setting differs from
+ENCODE: MACS2’s default duplicate handling was used
+(<code>--keep-dup 1</code>, at most one read per position and strand)
+and not <code>--keep-dup all</code>. MACS2’s output (broadPeak and
+gappedPeak, or narrowPeak and summits, and the <code>_peaks.xls</code>
+table) is delivered unchanged.</p>
+<p><strong>Merged peak set.</strong> The peaks of all calls (broadPeak
+or narrowPeak files) were pooled and merged with bedtools merge, joining
+peaks within 500 bp of each other into one region (R. Koche’s method;
+ENCODE does not merge peaks). The result is one set of regions shared by
+every sample of the project, written in SAF format with the regions
+named <code>Peak_1</code>, <code>Peak_2</code>, … in genome order. The
+start of each region is the 0-based start from bedtools written
+unchanged into the 1-based SAF, so each counted region begins one base
+before the merged peak. Because peaks are merged and pooled over
+samples, the number of regions grows with the number of samples and is
+not comparable to per-sample peak counts.</p>
+<p><strong>Counts.</strong> Fragments were counted over the merged peak
+set with featureCounts 2.1.1 (Liao 2014) from the filtered BAMs,
+counting read pairs as single fragments
+(<code>-p --countReadPairs</code>; reads for single-end data), with a
+fragment that overlaps two regions counted in both (<code>-O</code>).
+Control samples are counted as well. The counts were verified by two
+independent checks before use: each sample’s fragment total must be half
+its mapped reads, within 5%, and the number of fragments in the merged
+peaks, counted a second time with samtools alone, must equal
+featureCounts’ assigned total exactly. A run whose counts fail either
+check is stopped. The result of both checks for each sample is delivered
+with the counts.</p>
+<p><strong>Normalization.</strong> Size factors were computed from the
+raw count matrix with DESeq2 (Love 2014; median-of-ratios method, Anders
+2010) and written as scale factors, the reciprocal of the DESeq2 size
+factor, so that a normalized count is the raw count multiplied by the
+sample’s scale factor. They are delivered with the counts but are not
+applied to any delivered file.</p>
+<p><strong>QC.</strong> For each peak call the peaks with a MACS2
+q-value below 0.05 were taken as significant; their number and the total
+number of peaks are reported, the significant peaks are written to a
+table, and every peak is plotted as fold enrichment against p-value. The
+fraction of fragments in peaks is the number of fragments featureCounts
+assigned to the merged peak set divided by all fragments of the filtered
+BAM, taken from the featureCounts summary. It measures signal against
+background as ENCODE’s FRiP does, but is a different quantity: the
+regions are the merged peaks of all samples rather than the sample’s own
+peaks, so it is not comparable to ENCODE’s FRiP cutoffs. A principal
+component analysis of the samples was computed from the count matrix
+with edgeR (regions with too few counts removed with filterByExpr, TMM
+normalization, log2 CPM, not scaled) and plotted colored by sample
+group.</p>
+<p><strong>Peak annotation.</strong> When requested, each MACS2 peak
+file was annotated with HOMER v5.1 <code>annotatePeaks.pl</code> (Heinz
+2010) and the HOMER genome of the build (hg19 for b37, with
+<code>chr</code> added to the contig names; hg38; mm10), which gives for
+each peak the nearest TSS, its gene, the distance and the genomic
+feature.</p>
+<p><strong>Differential binding.</strong> When requested, pairwise
+comparisons between sample groups were tested with edgeR (Robinson 2010;
+McCarthy 2012). For each comparison, the samples of its two groups were
+taken from the count matrix, regions with too few counts removed with
+filterByExpr (over all samples of the analysis, then over the samples of
+the comparison), library sizes normalized with TMM, dispersions
+estimated, and a negative binomial generalized linear model fitted and
+tested with the likelihood ratio test. P-values were adjusted with the
+Holm method (Holm 1979; the column is labeled <code>FDR</code> in the
+output) and regions with an adjusted p-value below 0.05 were called
+significant. The Holm method controls the family-wise error rate and is
+stricter than the Benjamini-Hochberg false discovery rate. The sign of
+the log fold change is group 2 minus group 1 of the comparison: a
+positive value means more signal in group 2. Significant regions were
+annotated with the nearest gene and genomic feature using ChIPseeker (Yu
+2015) with the UCSC knownGene annotation of the build and a TSS region
+of 5 kb on each side. For each comparison, every tested region was
+plotted as an MA plot (log fold change against mean log2 CPM) and a
+volcano plot (log fold change against p-value, on a log scale), with the
+significant regions in red. Samples can be left out of the analysis by
+group.</p>
+<h2 id="tool-versions">Tool versions</h2>
+<p>The versions used for a run are recorded in
+<code>pipeline_info/cmd.sh.log</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BWA-MEM (PEMapper)</td>
+<td>0.7.19</td>
+</tr>
+<tr>
+<td>samtools</td>
+<td>1.20</td>
+</tr>
+<tr>
+<td>Picard SortSam</td>
+<td>2.25.5</td>
+</tr>
+<tr>
+<td>bedtools</td>
+<td>2.31.1</td>
+</tr>
+<tr>
+<td>UCSC wigToBigWig</td>
+<td>v 4</td>
+</tr>
+<tr>
+<td>MACS2</td>
+<td>2.2.9.1</td>
+</tr>
+<tr>
+<td>featureCounts (subread)</td>
+<td>2.1.1</td>
+</tr>
+<tr>
+<td>HOMER</td>
+<td>v5.1</td>
+</tr>
+<tr>
+<td>R</td>
+<td>4.5.1</td>
+</tr>
+<tr>
+<td>DESeq2</td>
+<td>1.50.2</td>
+</tr>
+<tr>
+<td>edgeR</td>
+<td>4.8.2</td>
+</tr>
+<tr>
+<td>ChIPseeker</td>
+<td>1.46.1</td>
+</tr>
+<tr>
+<td>TxDb.Hsapiens.UCSC.hg38.knownGene (hg38)</td>
+<td>3.22.0</td>
+</tr>
+<tr>
+<td>TxDb.Hsapiens.UCSC.hg19.knownGene (b37)</td>
+<td>3.22.1</td>
+</tr>
+<tr>
+<td>TxDb.Mmusculus.UCSC.mm10.knownGene (mm10)</td>
+<td>3.10.0</td>
+</tr>
+<tr>
+<td>org.Hs.eg.db, org.Mm.eg.db</td>
+<td>3.22.0</td>
+</tr>
+</tbody>
+</table>
+<h2 id="references">References</h2>
+<p>Anders S, Huber W. Differential expression analysis for sequence
+count data. Genome Biol 2010;11:R106. doi:10.1186/gb-2010-11-10-r106</p>
+<p>Danecek P, et al. Twelve years of SAMtools and BCFtools. GigaScience
+2021;10:giab008. doi:10.1093/gigascience/giab008</p>
+<p>ENCODE ChIP-seq pipeline. ENCODE Data Coordination Center. <a href="https://github.com/ENCODE-DCC/chip-seq-pipeline">https://github.com/ENCODE-DCC/chip-seq-pipeline</a>.
+Data standards: <a href="https://www.encodeproject.org/chip-seq/">https://www.encodeproject.org/chip-seq/</a></p>
+<p>Heinz S, Benner C, Spann N, et al. Simple combinations of
+lineage-determining transcription factors prime cis-regulatory elements
+required for macrophage and B cell identities. Mol Cell 2010;38:576-589.
+doi:10.1016/j.molcel.2010.05.004</p>
+<p>Holm S. A simple sequentially rejective multiple test procedure.
+Scand J Stat 1979;6:65-70.</p>
+<p>Kent WJ, Zweig AS, Barber G, Hinrichs AS, Karolchik D. BigWig and
+BigBed: enabling browsing of large distributed datasets. Bioinformatics
+2010;26:2204-2207. doi:10.1093/bioinformatics/btq351</p>
+<p>Li H. Aligning sequence reads, clone sequences and assembly contigs
+with BWA-MEM. arXiv 2013;1303.3997.</p>
+<p>Liao Y, Smyth GK, Shi W. featureCounts: an efficient general purpose
+program for assigning sequence reads to genomic features. Bioinformatics
+2014;30:923-930. doi:10.1093/bioinformatics/btt656</p>
+<p>Love MI, Huber W, Anders S. Moderated estimation of fold change and
+dispersion for RNA-seq data with DESeq2. Genome Biol 2014;15:550.
+doi:10.1186/s13059-014-0550-8</p>
+<p>McCarthy DJ, Chen Y, Smyth GK. Differential expression analysis of
+multifactor RNA-Seq experiments with respect to biological variation.
+Nucleic Acids Res 2012;40:4288-4297. doi:10.1093/nar/gks042</p>
+<p>Picard Toolkit. Broad Institute. <a href="http://broadinstitute.github.io/picard/">http://broadinstitute.github.io/picard/</a></p>
+<p>Quinlan AR, Hall IM. BEDTools: a flexible suite of utilities for
+comparing genomic features. Bioinformatics 2010;26:841-842.
+doi:10.1093/bioinformatics/btq033</p>
+<p>Robinson MD, McCarthy DJ, Smyth GK. edgeR: a Bioconductor package for
+differential expression analysis of digital gene expression data.
+Bioinformatics 2010;26:139-140. doi:10.1093/bioinformatics/btp616</p>
+<p>Yu G, Wang LG, He QY. ChIPseeker: an R/Bioconductor package for ChIP
+peak annotation, comparison and visualization. Bioinformatics
+2015;31:2382-2383. doi:10.1093/bioinformatics/btv145</p>
+<p>Zhang Y, et al. Model-based analysis of ChIP-Seq (MACS). Genome Biol
+2008;9:R137. doi:10.1186/gb-2008-9-9-r137</p>
+</body>
+</html>

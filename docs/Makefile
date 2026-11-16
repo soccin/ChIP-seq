@@ -1,5 +1,5 @@
 #
-# Render output.md to output.html and output.pdf. Run on IRIS:
+# Render output.md and methods.md to .html and .pdf. Run on IRIS:
 #
 #   make -C ChIP-seq/docs
 #
@@ -11,16 +11,20 @@
 
 PANDOC ?= pandoc
 
-all: output.html output.pdf
+all: output.html output.pdf methods.html methods.pdf
 
 output.html: output.md
 	$(PANDOC) --standalone --embed-resources \
 	    --metadata pagetitle="ChIP-Seq pipeline output" -o $@ $<
 
-output.pdf: output.md
+methods.html: methods.md
+	$(PANDOC) --standalone --embed-resources \
+	    --metadata pagetitle="ChIP-Seq pipeline methods" -o $@ $<
+
+%.pdf: %.md
 	$(PANDOC) --pdf-engine=xelatex -V geometry:margin=1in -o $@ $<
 
 clean:
-	rm -f output.html output.pdf
+	rm -f output.html output.pdf methods.html methods.pdf
 
 .PHONY: all clean

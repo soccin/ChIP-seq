@@ -1,63 +1,216 @@
 # Results for ChIPSeq Pipeline (v1.0.0)
 
-Output folders:
+This document describes the files in the `chipSeq` folder of a delivery
+and how they were made. The options of your run (genome, peak type,
+fragment length, samples) are recorded in
+`chipSeq/pipeline_info/cmd.sh.log`.
 
-_metrics_:
-PICARD metrics from mapping phase
+## Folders
 
-_alignments_:
-RAW unprocessed BAM files. Note before using the BAM's we post process them according to the ENCODE recipies which does the following:
+| Folder | Contents | Present |
+| --- | --- | --- |
+| `bw` | Coverage profiles (bigWig), one per sample | always |
+| `macs` | MACS2 peak calls, merged peak set, count matrix | if peaks were called |
+| `qc` | QC report, significant peaks and plots per peak call | if peaks were called |
+| `annote` | HOMER annotation of the peaks | if requested |
+| `diff` | Differential peak analysis (edgeR) | if requested |
+| `pipeline_info` | Record of the run | always |
+| `docs` | This document and the methods, as PDF and HTML | always |
 
-- remove unmapped, mate unmapped, non-proper paired reads
-- remove reads with MAPQ < 30
-- remove duplicates
-- remove Failed QC reads
+Sample names are the sample names of the mapped BAM files (the `SM` tag
+of the read group).
 
-_chipSeq/macs_: output of running `macs2 callpeak` on BED files derived from the post processed bams. The peak type is chosen once for the whole run, not per sample. Broad peaks are the default, for IP's with non-focal/broad binding:
+The delivery can also have the folders `bams` (the mapped BAM files) and
+`metrics` (alignment metrics) beside `chipSeq`. They come from the
+mapping pipeline and are not described here.
 
-- `--broad`
+## Processing
 
-for IP's with focal transcription factors the pipeline is run with `-n`, which calls the narrow peak set instead (no `--broad`).
+### Read filtering
 
-In both cases the following arguments are used:
+The mapped BAM files are filtered before any other step, following the
+ENCODE ChIP-seq pipeline. A read is kept only if:
 
-- `-p 0.01` - peak cutoff on the p-value rather than the q-value
-- `--nomodel --shift 0 --extsize <FRAGLEN>` - skip MACS model building and extend reads by a fixed fragment length. `<FRAGLEN>` is the median of the per-sample fragment lengths estimated by `macs2 predictd`, so a single value is used for every sample in the run.
+- it is mapped, with mapping quality (MAPQ) of at least 30
+- it is a primary alignment (no secondary or supplementary alignments)
+- it is not marked as a duplicate and did not fail the sequencer QC
+- it is on an autosome, chrX or chrY; reads on the mitochondrial genome
+  and on unplaced, random, decoy and viral contigs are removed
+- for paired-end data, its mate is mapped and passes the same filters,
+  and the two reads are a proper pair (same chromosome, expected
+  orientation and distance)
 
-See the MACS2 website [https://github.com/taoliu/MACS] for more information on the output.
+Two options change the last rule; `cmd.sh.log` shows which were used:
 
-There is also an aggregate peak file there which combines the peaks from all samples
-- macs/macsPeaksMerged.saf
-and a file that counts, for each sample, the fragments (read pairs; reads for single-end runs) that overlap each combined peak
-- macs/peaks_raw_fcCounts.txt
+- `PROPER_PAIR: No` - the proper pair requirement was dropped, to keep
+  pairs that span a rearrangement. Both reads still have to be mapped.
+- `SE: Yes` - single-end data; there are no mates and no pair rules.
 
-Before v1.0.0 (v0.7.0 to v0.9.0) this file counted each read of a pair separately, so every count was twice the number of fragments.
+The filtered BAM files are not delivered. The BAM files in `bams`, when
+present, are the mapped files before this filtering.
 
-_chipSeq/qc_: QC report/plots for ChIP related QC.
+### Fragment length
 
-- qcChIPSeq_PROJECT-NUM.xlsx - is a report for the total number of peaks found and the number of significant peaks. Low number of peaks could indicate an issue with the ChIP.
+`macs2 predictd` estimates the fragment length of each sample from its
+filtered reads. The median over the samples (`FRAGLEN` in `cmd.sh.log`)
+is used for every peak call of the run.
 
-- qcChIPSeq_PROJECT-NUM.pdf - plots of the number/percentage of fragments that fall in MACS peaks and a PCA plot of the aggregate peak counts for the samples, colored by sample group.
+## _chipSeq/bw_
 
-- peaks/ - for each MACS call, the significant peaks (`___sigPeaks__FDR_0.05.xlsx`) and a volcano plot (`___Volcano__FDR_0.05.png`).
+`<SAMPLE>_postProcess.clean.10mNorm.bw`: coverage of the filtered reads
+of the sample, scaled to 10 million reads, so that samples of different
+sequencing depth can be compared. Both reads of a pair are counted and
+reads are not extended. The files can be loaded into IGV
+[<https://igv.org>] or any other genome browser.
 
-_chipSeq/bw_:
-Normalized (to 10million reads) bigwig files for loading IP profiles into IGV [http://software.broadinstitute.org/software/igv/].
+## _chipSeq/macs_
 
-_chipSeq/annote_:
-Annotation of MACS2 peak file using HOMER `annotatePeaks.pl`. See the HOMER website [http://homer.ucsd.edu/homer/ngs/annotation.html] for more details on the output.
+Peaks are called with `macs2 callpeak` on the filtered reads, once per
+line of the pairing file, so once per target sample. Each call has its
+own folder, named for the target and its control:
 
-_chipSeq/diff_:
-Differential analysis of the aggregate peak counts using `edgeR`, run for each requested pairwise group comparison. Only present if a differential analysis was requested.
+- `<TARGET>_<CONTROL>` - target called against a control (input or IgG)
+- `<TARGET>____NoCTRL` - target called without a control
 
-- `*_DiffPeaksEdgeR_V3.xlsx` - differential peaks per comparison, with significant peaks annotated using ChIPseeker. Significance cutoff is FDR < 0.05.
-- `*_DiffPeaks_V3.pdf` - PCA plot plus MA and volcano plots for each comparison.
+The peak type is chosen once for the whole run (`PEAK_TYPE` in
+`cmd.sh.log`):
 
-Comparisons are specified as group pairs; the sign convention is Group2 - Group1, so a positive logFC means higher in Group2.
+- `broad` (default, `--broad`) - for histone marks and other factors
+  with broad binding. Files: `_peaks.broadPeak`, `_peaks.gappedPeak`,
+  `_peaks.xls`.
+- `narrow` - for transcription factors and other focal binding. Files:
+  `_peaks.narrowPeak`, `_summits.bed`, `_peaks.xls`.
 
-_chipSeq/pipeline_info_:
-The record of the run: pipeline version, options, genome, samples, fragment length and tool versions (`cmd.sh.log`), and the sample table (`samples.tsv`).
+Both use these arguments:
 
-_chipSeq/docs_:
-This document, as PDF and HTML.
+- `-p 0.01` - peaks are called at p-value < 0.01, a permissive cutoff.
+  Each peak also has a q-value; the QC step below uses it to select the
+  significant peaks.
+- `--nomodel --shift 0 --extsize <FRAGLEN>` - MACS2 does not build its
+  own model; reads are extended to the fragment length described above.
+- `-g` - the effective genome size of the build (`hs` or `mm`).
 
+The `_peaks.xls` file is a tab-delimited text file, not an Excel file.
+See the MACS2 documentation [<https://github.com/macs3-project/MACS>]
+for the format of the output files.
+
+The other files in the folder are for the run as a whole:
+
+- `macsPeaksMerged.saf` - the merged peak set: the peaks of all calls,
+  with peaks closer than 500 bp joined into one. Columns: peak name
+  (`Peak_N`), chromosome, start, end, strand. The start is the 0-based
+  start of the interval, one base lower than SAF defines it.
+- `peaks_raw_fcCounts.txt` - the raw count matrix: for each merged peak
+  and each sample, the number of fragments that overlap the peak
+  (featureCounts; read pairs for paired-end data, reads for single-end
+  data). A fragment that overlaps two peaks is counted in both. The
+  count columns are named for the filtered BAM files,
+  `out/<SAMPLE>_postProcess.bam`. This is the input for any
+  normalization or differential analysis.
+- `peaks_raw_fcCounts.txt.summary` - for each sample, the number of
+  fragments in peaks (`Assigned`) and outside them.
+- `peaks_raw_fcCounts.checks.txt` - two checks of the count matrix
+  against independent counts made with samtools. A run is delivered only
+  if every line is `OK`.
+- `scaleFactorsDESeq2.csv` - one scale factor per sample from the count
+  matrix: the inverse of the DESeq2 size factor. Multiply the counts of
+  a sample by it to compare samples. The bigWig files do not use it.
+
+In versions v0.7.0 to v0.9.0 `peaks_raw_fcCounts.txt` counted each read
+of a pair separately, so every count was twice the number of fragments.
+Since v1.0.0 it counts fragments.
+
+## _chipSeq/qc_
+
+- `qcChIPSeq_<PROJECT>.xlsx` - one row per peak call: the number of
+  peaks (`TotalPeaks`), the number of significant peaks, those with a
+  MACS2 q-value < 0.05 (`SigPeaks`), and their fraction (`PCT`). A low
+  number of peaks can indicate a problem with the ChIP.
+- `qcChIPSeq_<PROJECT>.pdf`
+    - the number of fragments of each sample inside and outside the
+      merged peaks
+    - the same as a percentage
+    - a PCA of the samples from the count matrix (edgeR: low-count peaks
+      removed, TMM normalization, log CPM), colored by sample group,
+      without and with sample labels. Use it to look for outliers and to
+      see whether replicates group together. Samples marked as excluded
+      are left out.
+- `peaks/` - for each peak call:
+    - `<CALL>___sigPeaks__FDR_0.05.xlsx` - the peaks with q-value < 0.05,
+      most significant first, with the columns of the MACS2 `_peaks.xls`
+      file. Not written when the call has no significant peak.
+    - `<CALL>___Volcano__FDR_0.05.png` - fold enrichment against p-value
+      for every peak of the call; significant peaks in red.
+
+## _chipSeq/annote_
+
+Annotation of each MACS2 peak file with HOMER `annotatePeaks.pl`: for
+each peak the nearest gene, the distance to its TSS and the genomic
+feature (promoter, exon, intron, intergenic, ...).
+
+- `<CALL>_peaks.broadPeak_HOMERAnnote.txt` (or `narrowPeak`) - the HOMER
+  output
+- `<CALL>_peaks.broadPeak_HOMERAnnote.xlsx` - the same table as an Excel
+  file
+
+See the HOMER documentation
+[<http://homer.ucsd.edu/homer/ngs/annotation.html>] for the columns.
+
+## _chipSeq/diff_
+
+Differential analysis of the count matrix with edgeR, for each requested
+comparison of two sample groups. For each comparison only the samples of
+the two groups are used: low-count peaks are removed (`filterByExpr`),
+the counts are normalized (TMM), and each peak is tested with a
+likelihood ratio test (`glmLRT`).
+
+The sign convention is Group2 - Group1. Sheets and plots are named
+`comp_group<Group2>-comp_group<Group1>`, the group that is higher at
+positive `logFC` first: in `comp_groupKO-comp_groupWT` a positive `logFC`
+means the peak is higher in KO.
+
+- `<PROJECT>__DiffPeaksEdgeR_V3.xlsx`
+    - `Summary` - the number of significant peaks for each comparison
+    - one sheet per comparison with its significant peaks: `logFC`
+      (log2), `logCPM`, `PValue`, `FDR`, the position and length of the
+      peak, and the nearest gene (`SYMBOL`, `GENENAME`), genomic feature
+      (`annotation`) and distance to the TSS from ChIPseeker.
+- `<PROJECT>__DiffPeaks_V3.pdf`
+    - a PCA of the samples in the analysis, without and with labels
+    - for each comparison an MA plot and a volcano plot; significant
+      peaks in red
+
+A peak is significant when its `FDR` value is below 0.05. The `FDR`
+column holds the p-value adjusted for multiple testing with the Holm
+method, which is stricter than the Benjamini-Hochberg false discovery
+rate. Only significant peaks are listed in the Excel file.
+
+If there is more than one analysis of a run, the file names have a tag
+between the project and `DiffPeaks`.
+
+## _chipSeq/pipeline_info_
+
+The record of the run.
+
+- `cmd.sh.log` - pipeline version, options (proper pairs, peak type,
+  single-end), pairing file, genome, fragment length, samples, input BAM
+  files, versions of the tools, and the command line
+- `samples.tsv` - for each sample, its input BAM file and its filtered
+  BAM file
+
+## _chipSeq/docs_
+
+- `output.pdf`, `output.html` - this document
+- `methods.pdf`, `methods.html` - the methods of the pipeline as text
+  for a paper, with the differences from the ENCODE pipeline, the tool
+  versions and the references
+
+## Software
+
+The versions used for a run are in `cmd.sh.log`. As of v1.0.0: samtools
+1.20, bedtools 2.31.1, picard 2.25.5, MACS2 2.2.9.1, featureCounts
+(subread) 2.1.1, R 4.5.1 with edgeR, DESeq2 and ChIPseeker, and HOMER.
+
+Supported genome builds: `b37` (GRCh37), `hg38` (GRCh38), `mm10`.
+
+Source and change history: <https://github.com/soccin/ChIP-seq>
