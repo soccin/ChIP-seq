@@ -75,7 +75,23 @@ sample in it, `EXC*` groups are left out of the PCA and the diff. A
 leftover `manifest.txt` (the old QC format) without `manifest.csv`
 stops `postPipe.sh`. `annotateWithHomer.sh` and `diffAnalysisPairwise.R`
 read the genome from `00.RUNSTATUS.txt`; they take no genome argument.
-`deliverResults.sh` is not ported (`POST-IRIS-PORT.md`).
+`annotateWithHomer.sh` writes `out/annote/`, `diffAnalysisPairwise.R`
+`out/diff/`.
+
+`deliverResults.sh [-n] -d | DIR[/r_NNN]` delivers a run `checkRun.sh`
+passes: the bigWigs, `out/macs`, `out/qc`, `out/pipeline_info`,
+`out/annote`, `out/diff` and the rendered `docs/output` and
+`docs/methods` (`.pdf`, `.html`) go to
+`/data1/core002/res/bic/results/<pi>/<invest>/Proj_<no>/r_NNN/chipSeq/`,
+every write as `svc_core001_bot01` (`dzdo`). It writes the email from
+`assets/tmpldeliveryEmail_*.txt` (`{PROJNO}`, `{RUNDIR}`, `{VERSION}`;
+`02` to `04` only when macs, annote, diff exist) and `project.yaml`
+(`bin/readme2yaml.R`: PI and investigator from the project's
+`README.txt` or `REQUEST.txt`), then registers the run with the
+permissions database. The email version is `bin/getRelease.sh`, the
+`Version:` line of `VERSION.md`, not `git describe`. It is a port of
+ATAC-seq's script (v2.1.0) with adagio's rsync options; keep the three
+alike. `POST-IRIS-PORT.md` is the plan it was made from.
 
 ## Architecture
 
@@ -217,13 +233,18 @@ exist:
 - `bin/picardJvm.sh` is PEMapper's (v_4.1.0) with `PEMAP_` renamed `CHIP_`
   and a larger margin (17408 MB, not 9216), so POST's 40G still gives a
   23g heap.
-- Version lives in five places that must move together: `README.md`,
-  `VERSION.md`, `CHANGELOG.md` (entry and compare links), `docs/output.md`
-  and the `cat()` banner in `getPackageVersions.R`. `pipe.sh` reports
-  `git describe`, so the tag must be pushed.
-- `docs/output.html` and `.pdf` are rendered from `docs/output.md` with
-  `make -C ChIP-seq/docs` (pandoc, xelatex) and must be regenerated when it
-  changes.
+- Version lives in six places that must move together: `README.md`,
+  `VERSION.md`, `CHANGELOG.md` (entry and compare links), `docs/output.md`,
+  `docs/methods.md` (header and release link) and the `cat()` banner in
+  `getPackageVersions.R`. `pipe.sh` reports `git describe`, so the tag
+  must be pushed.
+- `docs/output.md` (the delivered files) and `docs/methods.md` (methods
+  text for a paper, differences from ENCODE, tool versions, references)
+  are rendered to `.html` and `.pdf` with `make -C ChIP-seq/docs` (pandoc,
+  xelatex) and must be regenerated when either changes. Both are
+  delivered. A change to what a step does, or to a tool or package
+  version, needs `methods.md` updated; the two must agree with each
+  other and with the email templates.
 - Superseded scripts go to `attic/` rather than being deleted. Open issues
   in `00.ISSUES.md`, closed ones in `attic/zzISSUES.md`.
 - Shell: `set -e -o pipefail` (and `-u` where safe), `SDIR` self-location,

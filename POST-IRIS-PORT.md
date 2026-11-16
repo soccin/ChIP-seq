@@ -1,5 +1,12 @@
 # Porting `deliverResults.sh` to IRIS
 
+Done after v1.0.0 (`CHANGELOG.md`, Unreleased). The port follows
+ATAC-seq v2.1.0's `deliverResults.sh`, which was written after this plan,
+so it differs from the plan below: the version is the release of
+`VERSION.md`, not `GTAG`; the email is in `assets/tmpldeliveryEmail_*.txt`;
+the genome in `project.yaml` is the run's build tag. The text below is
+the plan as written.
+
 Work to do after v1.0.0. Decision D6 in `attic/00.SPEC_v1.0.0.md` left delivery
 out of the port. The model is adagio v3.2.2 (`bin/deliver.sh`,
 `bin/readme2yaml.R`, `assets/delivery_email_template.txt` in

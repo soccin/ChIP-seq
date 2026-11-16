@@ -4,8 +4,8 @@
 #
 # Annotate one MACS peak file (_peaks.broadPeak or _peaks.narrowPeak)
 # with HOMER annotatePeaks.pl. Run from the analysis directory of a
-# completed pipe.sh run. Writes annote/<peak file>_HOMERAnnote.txt and
-# .xlsx.
+# completed pipe.sh run. Writes out/annote/<peak file>_HOMERAnnote.txt
+# and .xlsx, which deliverResults.sh delivers with the rest of out/.
 #
 # The genome is GENOME= in 00.RUNSTATUS.txt (detected by pipe.sh from the
 # BAMs); the HOMER genome and whether to add "chr" to the contig names
@@ -94,12 +94,12 @@ if [ -n "$BAD" ]; then
 fi
 
 export PATH=$HOMERBIN:$PATH
-mkdir -p annote
+mkdir -p out/annote
 
 TMPFILE=$(mktemp -p "$TMPDIR" homerPeaks.XXXXXX.bed)
 trap 'rm -f "$TMPFILE"' EXIT
 
-ANNOTEFILE=annote/$(basename ${PEAKFILE%.txt})_HOMERAnnote.txt
+ANNOTEFILE=out/annote/$(basename ${PEAKFILE%.txt})_HOMERAnnote.txt
 
 if [ "$ADD_CHR" == "yes" ]; then
     awk -F'\t' 'BEGIN {OFS = "\t"} {$1 = "chr"$1; print}' $PEAKFILE >$TMPFILE

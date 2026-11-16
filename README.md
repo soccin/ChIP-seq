@@ -90,27 +90,55 @@ find out/macs | egrep "_peaks.(broad|narrow)Peak$" \
 Rscript --no-init-file ChIP-seq/R/diffAnalysisPairwise.R manifest.csv comps.csv [RUNTAG]
 ```
 
+They write into `out/annote/` and `out/diff/`.
+
+### Delivery
+
+```bash
+./ChIP-seq/deliverResults.sh -n -d     # dry run: print the commands
+./ChIP-seq/deliverResults.sh -d
+```
+
+`deliverResults.sh` refuses a run `checkRun.sh` does not pass. `-d` takes
+the delivery folder from the path of the analysis directory
+(`.../Users/<Pi>/<Invest>/Proj_<no>/...` gives
+`/data1/core002/res/bic/results/<pi>/<invest>/Proj_<no>`); a folder can be
+given instead, with a trailing `r_NNN` to add to an existing run folder.
+It copies the bigWigs, `out/macs`, `out/qc`, `out/pipeline_info`,
+`out/annote` and `out/diff` (if present) and the rendered `docs/output`
+and `docs/methods` (`.pdf` and `.html`) to `r_NNN/chipSeq/` as the service account, writes the delivery email to
+`deliveryEmail_<no>_r_NNN_<yymmdd>.txt` and `project.yaml` (PI and
+investigator from the project's `README.txt` or `REQUEST.txt`), and
+registers the run with the delivery permissions database.
+
 The count matrix (`out/macs/peaks_raw_fcCounts.txt`) counts fragments
 (read pairs), and the run fails if Checks A or B find it wrong
 (`out/macs/peaks_raw_fcCounts.checks.txt`). Runs made with v0.7.0 to
 v0.9.0 counted reads; see `CHANGELOG.md`.
 
-Version which uses both reads from PE-runs. Using methods from R.K. for bigWig generation. Added option to allow the use of non-proper paired reads for cases where translocations important.
+### Method
 
-Try to match ENCODE 3 (https://github.com/soccin/ChIP-seq) as closely as possible
+`docs/output.md` describes every delivered file; `docs/methods.md` is
+the methods text for a paper, with the differences from ENCODE, tool
+versions and references. Both are delivered as `.pdf` and `.html`
+(render with `make -C ChIP-seq/docs`). In short, following the ENCODE 3
+ChIP-seq pipeline
+([`filter_qc.py`](https://github.com/ENCODE-DCC/chip-seq-pipeline/tree/master/dnanexus/filter_qc),
+[`macs2.py`](https://github.com/ENCODE-DCC/chip-seq-pipeline/blob/master/dnanexus/macs2/src/macs2.py)):
 
-- Post-alignment filtering: Get from ENCODE 3
-
-    - Code for [`filter_qc.py`](https://github.com/ENCODE-DCC/chip-seq-pipeline/tree/master/dnanexus/filter_qc)
-    - `samtools view -q 30 -f 2 -F 1804 -f 2`
-        - MAPQ<30
-        - Proper Pair (can be turned off)
-        - exclude: unmapped, mate unmapped, secondary align, failing QC, Duplicate
-    - Also keep only the main chromosomes `[1-(19|22),X,Y]`; exclude MT, and the rest of the build, decoys, viral, ...
-
-- BigWig file generation.
-
-	- convert bam to bed
-	- compute density for bigwig formation
-		- normalizing to 10 million mapped reads
+- Post-alignment filtering: `samtools view -q 30 -f 2 -F 3852`
+    - keeps MAPQ >= 30 and proper pairs (`--proper-pair-off` drops the
+      proper pair rule, for cases where translocations matter; `-s` for
+      single-end data)
+    - removes unmapped, mate unmapped, secondary, supplementary, QC-fail
+      and duplicate reads, then orphans (`samtools fixmate`)
+    - keeps only the main chromosomes (autosomes, X, Y); MT and the
+      unplaced, decoy and viral contigs are removed
+- BigWig: filtered BAM to BED, coverage of both reads of a pair,
+  scaled to 10 million reads
+- Fragment length: `macs2 predictd` per sample; the median is used for
+  every call
+- Peaks: `macs2 callpeak -p 0.01 --nomodel --shift 0 --extsize FRAGLEN`,
+  `--broad` unless `-n`
+- Merged peaks (within 500 bp) and fragment counts (featureCounts)
 

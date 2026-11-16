@@ -1,0 +1,14 @@
+Subject: Results for Project {PROJNO} ChIPseq ready
+
+The results of the ChIPseq pipeline ({VERSION}) for project {PROJNO} are ready. You can access them at:
+
+   https://bicdelivery.mskcc.org/project/{PROJNO}/chipseq/{RUNDIR}
+
+The results are in the folder
+
+   chipSeq
+
+which has the following subfolders:
+
+- bw: coverage profiles in bigWig format, one per sample, scaled to 10 million reads. Load them into IGV to view the signal along the genome.
+

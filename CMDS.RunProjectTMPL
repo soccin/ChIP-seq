@@ -29,4 +29,8 @@ find out/macs | egrep "_peaks.(broad|narrow)Peak$" \
 #
 #   Rscript --no-init-file ChIP-seq/R/diffAnalysisPairwise.R manifest.csv comps.csv
 
-# deliverResults.sh is not ported to IRIS (00.ISSUES.md)
+# Deliver: -n prints the delivery and database commands without running
+# them; -d takes the delivery folder from the analysis directory path
+#
+#   ./ChIP-seq/deliverResults.sh -n -d
+#   ./ChIP-seq/deliverResults.sh -d

@@ -91,3 +91,15 @@ command only when a manifest existed, and copied `qcChIPSeq_*` into
 there is none and always runs QC stage 2; the QC scripts write straight
 into `out/qc/`; `01_POST_DONE` lists the HOMER and differential
 analysis commands every time.
+
+**#2 `deliverResults.sh` not ported** (`00.ISSUES.md`, spec D6) — It
+printed JUNO paths and the delivery URL with a fixed `r_001`, and wrote
+to the delivery area as the user. Ported from ATAC-seq v2.1.0 with the
+rsync options of adagio's `bin/deliver.sh`: `-d` default folder under
+`/data1/core002/res/bic/results`, next free `r_NNN`, `-n` dry run,
+writes as the service account, email from
+`assets/tmpldeliveryEmail_*.txt`, `project.yaml` and the permissions
+database. `annotateWithHomer.sh` and `diffAnalysisPairwise.R` now write
+into `out/annote/` and `out/diff/`, which the old script copied but
+nothing wrote. The old script is `attic/deliverResults.sh`; its email
+template is `attic/delivery_email_template.txt`.

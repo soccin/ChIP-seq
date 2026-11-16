@@ -17,7 +17,7 @@
 #   - QC stage 2 (qc_ChIPSeq_02.R manifest.csv): fragments in peaks per
 #     sample and a PCA of the peak counts colored by Group, into out/qc/
 #   - 01_POST_DONE: what was done and the next steps (HOMER annotation,
-#     differential analysis)
+#     differential analysis, delivery)
 #
 # Output is always out/ (pipe.sh -o was removed in v1.0.0), so this takes
 # no arguments.
@@ -146,6 +146,11 @@ Differential analysis, with the groups of $MANIFEST and a comparisons
 file (example: $SDIR/assets/comps_example.csv)
 
     Rscript --no-init-file $SDIR/R/diffAnalysisPairwise.R $MANIFEST comps.csv
+
+Deliver (-n: dry run; -d: delivery folder from the path of this directory)
+
+    $SDIR/deliverResults.sh -n -d
+    $SDIR/deliverResults.sh -d
 
 EOF
 } | tee 01_POST_DONE

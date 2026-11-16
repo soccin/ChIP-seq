@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- `docs/output.md` rewritten from what the scripts do: a table of the
+  delivered folders, the read filters, the fragment length, every file
+  of `bw`, `macs`, `qc`, `annote`, `diff` and `pipeline_info`, the MACS2
+  folder naming (one per call, `<TARGET>_<CONTROL>`), and the software
+  versions. The mapping pipeline's folders (`bams`, `metrics`) are
+  named and no longer described. It states that the `FDR`
+  column of the differential analysis is the Holm-adjusted p-value
+  (`00.ISSUES.md` #18).
+- Delivery email (`assets/tmpldeliveryEmail_*.txt`) reworded to match:
+  `macs` and `qc/peaks` are per peak call, not per sample; the sign
+  convention of `logFC` is given.
+- `README.md`: the old ENCODE notes are replaced by a short "Method"
+  section that points to `docs/output.md` and `docs/methods.md`.
+- `docs/Makefile` renders `methods.md` too; `deliverResults.sh` requires
+  and delivers `docs/methods.pdf` and `.html`, and the email names them.
 - One sample manifest, `manifest.csv` (CSV, header `MapID,SampleID,Group`),
   for QC stage 2 and `R/diffAnalysisPairwise.R`, read and checked by
   `read_manifest()` in `tools.R`. QC stage 2 no longer reads
@@ -28,7 +43,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fewer than 2 samples are outside `EXC` groups, and colors more than 25
   groups.
 
+- `annotateWithHomer.sh` writes into `out/annote/` (was `annote/`) and
+  `R/diffAnalysisPairwise.R` into `out/diff/` (was the analysis
+  directory), where `deliverResults.sh` takes them from.
+
 ### Added
+- `docs/methods.md` (first version, after ATAC-seq's): the methods of
+  each step as text for a paper, the differences from the ENCODE 3
+  ChIP-seq pipeline, tool and package versions, references. Delivered
+  as `methods.pdf` and `.html`. It holds the version, so the version is
+  now in six places.
+- `deliverResults.sh` ported to IRIS (`00.ISSUES.md` #2), from ATAC-seq
+  v2.1.0 with the rsync options of adagio's `bin/deliver.sh`: refuses a
+  run `bin/checkRun.sh` does not pass; `-d` default delivery folder
+  under `/data1/core002/res/bic/results`; next free `r_NNN`; `-n` dry
+  run; every write as the service account, with the group and folder
+  modes set; delivers `docs/output.pdf` and `.html` in `chipSeq/docs`;
+  writes the email from `assets/tmpldeliveryEmail_*.txt` with the
+  release of `VERSION.md` (`bin/getRelease.sh`); writes `project.yaml`
+  (`bin/readme2yaml.R`, from `README.txt` or `REQUEST.txt`) and
+  registers the run with the permissions database. The old script and
+  its email template (`delivery_email_template.txt`) are in `attic/`.
 - `assets/manifest_example.csv` and `assets/comps_example.csv`; the
   `diffAnalysisPairwise.R` usage pointed to example files that did not
   exist.
