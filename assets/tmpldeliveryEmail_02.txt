@@ -1,14 +1,18 @@
-- macs: the output from the MACS2 peak calling program, one folder per sample. Also the merged list of peaks found in all samples (macsPeaksMerged.saf) and the raw count matrix over it (peaks_raw_fcCounts.txt), which counts fragments and is the input for any normalization or differential analysis.
+- macs: the output of the MACS2 peak caller, one folder per peak call (a target sample and its control; NoCTRL in the name when there is no control). Also for the run as a whole:
 
-- qc: QC reports for the samples.
+   - macsPeaksMerged.saf: the merged peak set, the peaks of all calls joined into one list.
 
-   - qcChIPSeq_Proj_{PROJNO}.xlsx: the total number of peaks and the number of significant peaks for each sample. A low number of peaks could indicate an issue with the ChIP.
+   - peaks_raw_fcCounts.txt: the raw count matrix, the number of fragments of each sample in each merged peak. It is the input for any normalization or differential analysis.
+
+- qc: QC reports.
+
+   - qcChIPSeq_Proj_{PROJNO}.xlsx: for each peak call, the total number of peaks and the number of significant peaks (MACS2 q-value < 0.05). A low number of peaks can indicate a problem with the ChIP.
 
    - qcChIPSeq_Proj_{PROJNO}.pdf
 
-      - Plots of the number and percentage of each sample's fragments in peaks.
+      - The number and percentage of each sample's fragments that are in peaks.
 
-      - PCA from the merged peak counts. Can be used to look for potential outliers.
+      - A PCA of the samples from the merged peak counts. Use it to look for outliers.
 
-   - peaks: for each sample the significant peaks (FDR < 0.05) as an Excel file and a volcano plot.
+   - peaks: for each peak call, the significant peaks as an Excel file and a plot of fold enrichment against p-value.
 

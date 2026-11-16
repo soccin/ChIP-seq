@@ -1,14 +1,14 @@
-- diff: Differential analysis of the merged peaks using edgeR
+- diff: differential analysis of the merged peak counts with edgeR, for each comparison of two sample groups.
 
    - Proj_{PROJNO}__DiffPeaksEdgeR_V3.xlsx
 
-      - A summary sheet of the number of significant peaks for each comparison
+      - A summary sheet with the number of significant peaks for each comparison.
 
-      - For each comparison a sheet with the differentially significant peaks (FDR < 0.05) and their annotation
+      - For each comparison a sheet with its significant peaks (adjusted p-value < 0.05) and their annotation. The sheet name gives the two groups as B-A; a positive logFC means the peak is higher in B.
 
    - Proj_{PROJNO}__DiffPeaks_V3.pdf
 
-      - PCA from the merged peak counts
+      - A PCA of the samples from the merged peak counts.
 
-      - For each comparison an MA plot and a volcano plot
+      - For each comparison an MA plot and a volcano plot.
 

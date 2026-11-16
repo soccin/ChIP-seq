@@ -19,7 +19,8 @@
 #         out/pipeline_info     -> pipeline_info/
 #         out/annote            -> annote/     (annotateWithHomer.sh), if any
 #         out/diff              -> diff/       (R/diffAnalysisPairwise.R), if any
-#         docs/output.pdf, .html of this checkout -> docs/
+#         docs/output.pdf, .html and docs/methods.pdf, .html of this
+#         checkout              -> docs/
 #     out/bam, out/bed and the other files of out/ are not delivered;
 #   - writes the delivery email to deliveryEmail_<no>_r_NNN_<yymmdd>.txt,
 #     with the release of VERSION.md of this checkout;
@@ -220,7 +221,8 @@ if ! VERSION=$("$SDIR/bin/getRelease.sh"); then
     fatal "no release in $SDIR/VERSION.md"
 fi
 
-DOCS=("$SDIR/docs/output.pdf" "$SDIR/docs/output.html")
+DOCS=("$SDIR/docs/output.pdf" "$SDIR/docs/output.html"
+      "$SDIR/docs/methods.pdf" "$SDIR/docs/methods.html")
 for f in "${DOCS[@]}"; do
     if [ ! -s "$f" ]; then
         fatal "missing $f; render it with make -C $SDIR/docs"

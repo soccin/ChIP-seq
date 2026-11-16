@@ -1,10 +1,11 @@
-- pipeline_info: the record of the run: version, options, genome, samples and tool versions.
+- pipeline_info: the record of the run: pipeline version, options, genome, samples and tool versions.
 
-- docs: output.pdf describes the output files in detail (also as HTML). It is also online:
+- docs: output.pdf describes every file of the delivery, and methods.pdf is a methods section with references that can be used for a paper (both also as HTML). They are also online:
 
    https://github.com/soccin/ChIP-seq/blob/{VERSION}/docs/output.md
+   https://github.com/soccin/ChIP-seq/blob/{VERSION}/docs/methods.md
 
-We are also trying to improve the pipeline. If there are any reports or computations that we can add to help with your analysis, please let us know.
+If there are reports or computations we could add to help with your analysis, please let us know.
 
 Nicholas Socci
 Bioinformatics Core
