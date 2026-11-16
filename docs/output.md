@@ -55,3 +55,9 @@ Differential analysis of the aggregate peak counts using `edgeR`, run for each r
 
 Comparisons are specified as group pairs; the sign convention is Group2 - Group1, so a positive logFC means higher in Group2.
 
+_chipSeq/pipeline_info_:
+The record of the run: pipeline version, options, genome, samples, fragment length and tool versions (`cmd.sh.log`), and the sample table (`samples.tsv`).
+
+_chipSeq/docs_:
+This document, as PDF and HTML.
+

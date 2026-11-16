@@ -75,7 +75,22 @@ sample in it, `EXC*` groups are left out of the PCA and the diff. A
 leftover `manifest.txt` (the old QC format) without `manifest.csv`
 stops `postPipe.sh`. `annotateWithHomer.sh` and `diffAnalysisPairwise.R`
 read the genome from `00.RUNSTATUS.txt`; they take no genome argument.
-`deliverResults.sh` is not ported (`POST-IRIS-PORT.md`).
+`annotateWithHomer.sh` writes `out/annote/`, `diffAnalysisPairwise.R`
+`out/diff/`.
+
+`deliverResults.sh [-n] -d | DIR[/r_NNN]` delivers a run `checkRun.sh`
+passes: the bigWigs, `out/macs`, `out/qc`, `out/pipeline_info`,
+`out/annote`, `out/diff` and `docs/output.pdf`/`.html` go to
+`/data1/core002/res/bic/results/<pi>/<invest>/Proj_<no>/r_NNN/chipSeq/`,
+every write as `svc_core001_bot01` (`dzdo`). It writes the email from
+`assets/tmpldeliveryEmail_*.txt` (`{PROJNO}`, `{RUNDIR}`, `{VERSION}`;
+`02` to `04` only when macs, annote, diff exist) and `project.yaml`
+(`bin/readme2yaml.R`: PI and investigator from the project's
+`README.txt` or `REQUEST.txt`), then registers the run with the
+permissions database. The email version is `bin/getRelease.sh`, the
+`Version:` line of `VERSION.md`, not `git describe`. It is a port of
+ATAC-seq's script (v2.1.0) with adagio's rsync options; keep the three
+alike. `POST-IRIS-PORT.md` is the plan it was made from.
 
 ## Architecture
 
