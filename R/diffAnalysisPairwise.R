@@ -19,9 +19,9 @@ REQUIRED ARGUMENTS:
 OPTIONAL ARGUMENTS:
   RUNTAG        Tag to append to output filenames (default: none)
 
-OUTPUT FILES:
-  - DiffPeaksEdgeR_V3.xlsx : Excel file with differential peaks
-  - DiffPeaks_V3.pdf       : PDF with PCA and MA/volcano plots
+OUTPUT FILES (in out/diff, delivered by deliverResults.sh):
+  - <Proj>_<RUNTAG>_DiffPeaksEdgeR_V3.xlsx : Excel file with differential peaks
+  - <Proj>_<RUNTAG>_DiffPeaks_V3.pdf       : PDF with PCA and MA/volcano plots
 
 --------------------------------------------------------------------------------
 MANIFEST FILE FORMAT (with header):
@@ -436,15 +436,20 @@ summary_stats <- map(result_tables, nrow) |>
   bind_rows() |>
   gather(Comparison, NumSig)
 
+# Output goes to out/diff, which deliverResults.sh delivers as
+# chipSeq/diff
+DIFF_DIR <- "out/diff"
+dir_create(DIFF_DIR)
+
 # Write results to Excel file
-output_xlsx <- str_c(project_id, RUNTAG, "DiffPeaksEdgeR_V3.xlsx", sep = "_")
+output_xlsx <- path(DIFF_DIR, str_c(project_id, RUNTAG, "DiffPeaksEdgeR_V3.xlsx", sep = "_"))
 write.xlsx(
   c(list(Summary = summary_stats), result_tables),
   output_xlsx
 )
 
 # Generate PDF with PCA and differential analysis plots
-output_pdf <- str_c(project_id, RUNTAG, "DiffPeaks_V3.pdf", sep = "_")
+output_pdf <- path(DIFF_DIR, str_c(project_id, RUNTAG, "DiffPeaks_V3.pdf", sep = "_"))
 pdf(output_pdf, width = 11, height = 8.5)
 
 print(pca_plot)
