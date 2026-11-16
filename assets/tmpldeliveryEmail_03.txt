@@ -1,0 +1,2 @@
+- annote: Annotation of each sample's MACS2 peaks with HOMER (nearest gene, distance to TSS, genomic feature), as a text file and an Excel file.
+
