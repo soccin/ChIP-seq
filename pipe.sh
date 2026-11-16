@@ -41,6 +41,31 @@
 
 set -eu
 
+#
+# HOLD (2026-11-16): pipe.sh is deactivated until the open issues below
+# are decided. Each one changes results or output names, so they are to
+# be settled before the next run, not after it. To reactivate, delete
+# this block (down to END HOLD) and the HOLD note in 00.ISSUES.md.
+#
+cat << 'EOF'
+
+    FATAL ERROR: pipe.sh is on hold; nothing was run.
+
+    Decide these open issues first (00.ISSUES.md):
+
+      #18  The FDR column of the differential analysis is Holm, not BH
+           (R/diffAnalysisPairwise.R: p.adjust() default method)
+      #19  Comparison names in the differential output keep comp_group
+           (R/diffAnalysisPairwise.R: comp_tag)
+      #20  MACS2 runs with its default --keep-dup 1, not ENCODE's
+           --keep-dup all (callPeaks_ChIPseq.sh)
+
+    Then delete the HOLD block at the top of pipe.sh to reactivate it.
+
+EOF
+exit 1
+# END HOLD
+
 SDIR=${SBATCH_SCRIPT_DIR:-$( cd "$( dirname "$0" )" && pwd )}
 
 if [ ! -e "$SDIR/postMapBamProcessing_ChIPSeq.sh" ]; then
